@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-  import AppSidebar from "$lib/components/app-sidebar.svelte";
-  import SiteHeader from "$lib/components/site-header.svelte";
+  import AppSidebar from "$lib/components/nav/app-sidebar.svelte";
+  import AppHeader from "$lib/components/nav/app-header.svelte";
 
   let { children } = $props();
 </script>
@@ -11,7 +11,7 @@
 >
   <AppSidebar variant="inset" />
   <Sidebar.Inset>
-    <SiteHeader />
+    <AppHeader />
     <div class="flex flex-1 flex-col">
       <div class="@container/main flex flex-1 flex-col gap-2">
         <div class="flex flex-col gap-4 p-4 md:gap-6 md:p-6">

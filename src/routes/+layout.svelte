@@ -3,7 +3,8 @@
   import favicon from "$lib/assets/favicon.svg";
   import { invalidate } from "$app/navigation";
   import { onMount } from "svelte";
-
+  import { ModeWatcher } from "mode-watcher";
+  import { Toaster } from "$lib/components/ui/sonner";
   let { data, children } = $props();
   let { supabase, session } = $derived(data);
 
@@ -18,4 +19,8 @@
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
-{@render children()}
+<div class="h-dvh">
+  <Toaster />
+  <ModeWatcher />
+  {@render children()}
+</div>

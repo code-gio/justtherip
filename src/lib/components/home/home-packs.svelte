@@ -33,7 +33,7 @@
   ];
 </script>
 
-<section class="packs-section">
+<section id="packs" class="packs-section">
   <div class="container">
     <div class="section-header">
       <span class="section-tag">Pack Showcase</span>

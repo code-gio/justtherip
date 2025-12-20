@@ -2,7 +2,7 @@
   import { IconCheck } from "@tabler/icons-svelte";
 </script>
 
-<section class="why-section">
+<section id="why-us" class="why-section">
   <div class="container">
     <div class="why-grid">
       <div class="why-content">

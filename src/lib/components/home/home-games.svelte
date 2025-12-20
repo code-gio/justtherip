@@ -1,4 +1,4 @@
-<section class="games-section">
+<section id="games" class="games-section">
   <div class="container">
     <div class="section-header">
       <span class="section-tag">Supported Games</span>

@@ -1,9 +1,21 @@
 /**
  * Rate limiting utility for authentication endpoints
  *
- * NOTE: This uses in-memory storage which is NOT suitable for production
+ * ⚠️ IMPORTANT: This uses in-memory storage which is NOT suitable for production
  * with multiple server instances. For production, use Redis, Upstash,
  * or another distributed store.
+ *
+ * 📖 See PRODUCTION_NOTES.md for migration guide to distributed rate limiting
+ *
+ * Current implementation is suitable for:
+ * - Development environments
+ * - Single-server deployments
+ * - Testing and prototyping
+ *
+ * NOT suitable for:
+ * - Horizontal scaling (multiple server instances)
+ * - Serverless/edge deployments with multiple regions
+ * - High-availability production deployments
  */
 
 export interface RateLimitConfig {

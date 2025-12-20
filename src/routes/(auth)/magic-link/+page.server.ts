@@ -75,20 +75,23 @@ export const actions: Actions = {
         },
       });
 
+      // Always return success to prevent email enumeration
       if (error) {
+        console.error("Magic link error:", error.message);
         await recordFailedAttempt(clientIp, email);
-        return handleAuthError(form, error);
+      } else {
+        // Clear rate limiting only on actual success
+        rateLimitStore.delete(getRateLimitKey(clientIp, email));
       }
 
-      // Clear rate limiting on success
-      rateLimitStore.delete(getRateLimitKey(clientIp, email));
-
+      // Return generic success message regardless of whether email exists
       return {
         form,
         success: true,
         email,
         type: "success",
-        message: "Magic link sent successfully. Please check your email.",
+        message:
+          "If an account exists with this email, you will receive a magic link shortly.",
       };
     } catch (error) {
       console.error("Magic link error:", error);

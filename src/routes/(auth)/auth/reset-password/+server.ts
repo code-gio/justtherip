@@ -2,6 +2,7 @@ import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { changePasswordForm } from "$lib/schemas/change-password";
 import { z } from "zod";
+import { csrfProtection } from "$lib/utils/csrf";
 
 const MAX_ATTEMPTS = 5;
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
@@ -28,6 +29,10 @@ const resetPasswordSchema = z.object({
 });
 
 export const POST: RequestHandler = async (event) => {
+  // CSRF Protection
+  const csrfError = csrfProtection(event);
+  if (csrfError) return csrfError;
+
   try {
     const body = await event.request.json();
     const {

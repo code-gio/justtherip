@@ -21,6 +21,7 @@
    */
 
   import {
+    HomeHeader,
     HomeHero,
     HomePacks,
     HomeHowItWorks,
@@ -45,6 +46,7 @@
 </svelte:head>
 
 <div class="landing-page dark">
+  <HomeHeader />
   <HomeHero />
   <HomePacks />
   <HomeHowItWorks />

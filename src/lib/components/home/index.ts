@@ -1,3 +1,4 @@
+export { default as HomeHeader } from "./home-header.svelte";
 export { default as HomeHero } from "./home-hero.svelte";
 export { default as HomePacks } from "./home-packs.svelte";
 export { default as HomeHowItWorks } from "./home-how-it-works.svelte";

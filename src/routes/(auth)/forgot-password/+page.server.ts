@@ -65,19 +65,25 @@ export const actions: Actions = {
         redirectTo: `${url.origin}/reset-password/confirm`,
       });
 
+      // Always return success to prevent email enumeration
+      // This prevents attackers from discovering valid email addresses
       if (error) {
+        // Log the error for debugging but don't expose it to the user
+        console.error("Password reset error:", error.message);
+        // Still record failed attempt for rate limiting
         await recordFailedAttempt(clientIp, email);
-        return handleAuthError(form, error);
+      } else {
+        // Clear rate limiting only on actual success
+        rateLimitStore.delete(getRateLimitKey(clientIp, email));
       }
 
-      // Clear rate limiting on success
-      rateLimitStore.delete(getRateLimitKey(clientIp, email));
-
+      // Return generic success message regardless of whether email exists
       return {
         form,
         success: true,
         type: "success",
-        message: "Password reset email sent successfully",
+        message:
+          "If an account exists with this email, you will receive a password reset link shortly.",
       };
     } catch (error) {
       console.error("Password reset error:", error);

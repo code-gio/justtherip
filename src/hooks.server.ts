@@ -6,6 +6,10 @@ import {
 import { createServerClient } from "@supabase/ssr";
 import type { Handle } from "@sveltejs/kit";
 
+// Validate environment variables at startup
+// This will throw an error if any required env vars are missing or invalid
+import "$lib/server/env";
+
 export const handle: Handle = async ({ event, resolve }) => {
   event.locals.supabase = createServerClient(
     PUBLIC_SUPABASE_URL,

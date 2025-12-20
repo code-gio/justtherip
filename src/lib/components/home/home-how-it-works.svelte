@@ -2,7 +2,7 @@
   import { IconDiamond, IconPackage, IconTruck } from "@tabler/icons-svelte";
 </script>
 
-<section class="how-section">
+<section id="how-it-works" class="how-section">
   <div class="container">
     <div class="section-header">
       <span class="section-tag">How It Works</span>

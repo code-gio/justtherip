@@ -1,6 +1,7 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { z } from "zod";
+import { csrfProtection } from "$lib/utils/csrf";
 
 const MAX_ATTEMPTS = 3;
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
@@ -16,6 +17,10 @@ const resendSchema = z.object({
 });
 
 export const POST: RequestHandler = async (event) => {
+  // CSRF Protection
+  const csrfError = csrfProtection(event);
+  if (csrfError) return csrfError;
+
   try {
     const body = await event.request.json();
     const {

@@ -1,20 +1,21 @@
 import { redirect } from "@sveltejs/kit";
 
 export const GET = async (event) => {
-    const {
-        url,
-        locals: { supabase },
-    } = event;
-    const code = url.searchParams.get("code") as string;
-    const next = url.searchParams.get("next") ?? "/";
+  const {
+    url,
+    locals: { supabase },
+  } = event;
+  const code = url.searchParams.get("code") as string;
+  const next = url.searchParams.get("next") ?? "/dashboard";
 
-    if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (!error) {
-            throw redirect(303, `/dashboard`);
-        }
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      // Use the next parameter for flexible redirects
+      throw redirect(303, next);
     }
+  }
 
-    // return the user to an error page with instructions
-    throw redirect(303, "/auth/auth-code-error");
+  // Return the user to an error page with instructions
+  throw redirect(303, "/auth/error");
 };

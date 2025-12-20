@@ -10,13 +10,13 @@ import {
   type AuthResult,
 } from "$lib/types/auth";
 import { zod4 } from "sveltekit-superforms/adapters";
+import { handleAuthError } from "$lib/utils/auth-errors";
+import { RateLimiter, RateLimitPresets } from "$lib/utils/rate-limit";
 
 const AUTH_FORM_ID = "sign-in-form";
-const MAX_ATTEMPTS = 5;
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
 
-// Store failed attempts in memory (consider using Redis in production)
-const failedAttempts = new Map<string, { count: number; timestamp: number }>();
+// Initialize rate limiter
+const rateLimiter = new RateLimiter(RateLimitPresets.signIn);
 
 export const load: PageServerLoad = async () => {
   const form = await superValidate(zod4(signInSchema), {
@@ -33,15 +33,20 @@ export const actions: Actions = {
       getClientAddress,
     } = event;
 
-    // Check rate limiting
     const clientIp = getClientAddress();
-    if (await isRateLimited(clientIp)) {
+
+    // Clean up expired rate limit entries
+    rateLimiter.cleanup();
+
+    // Check rate limiting
+    const rateLimitResult = rateLimiter.check(clientIp);
+    if (!rateLimitResult.allowed) {
       return fail(429, {
         form: await superValidate(event, zod4(signInSchema), {
           id: AUTH_FORM_ID,
         }),
         type: "RATE_LIMITED" as AuthErrorType,
-        message: AuthErrorMessages.RATE_LIMITED,
+        message: rateLimitResult.message,
       });
     }
 
@@ -77,16 +82,12 @@ export const actions: Actions = {
       );
 
       if (authError) {
-        await recordFailedAttempt(clientIp);
-        const result = handleAuthError(form, authError);
-        return fail(authError?.status || 500, {
-          ...result,
-          form,
-        });
+        rateLimiter.recordAttempt(clientIp);
+        return handleAuthError(form, authError);
       }
 
-      // Clear failed attempts on successful login
-      failedAttempts.delete(clientIp);
+      // Clear rate limit on successful login
+      rateLimiter.clear(clientIp);
 
       return {
         form,
@@ -105,51 +106,3 @@ export const actions: Actions = {
     }
   },
 };
-
-async function isRateLimited(clientIp: string): Promise<boolean> {
-  const attempt = failedAttempts.get(clientIp);
-  if (!attempt) return false;
-
-  const timeSinceFirstAttempt = Date.now() - attempt.timestamp;
-  if (timeSinceFirstAttempt > RATE_LIMIT_WINDOW) {
-    failedAttempts.delete(clientIp);
-    return false;
-  }
-
-  return attempt.count >= MAX_ATTEMPTS;
-}
-
-async function recordFailedAttempt(clientIp: string): Promise<void> {
-  const attempt = failedAttempts.get(clientIp);
-  if (!attempt) {
-    failedAttempts.set(clientIp, { count: 1, timestamp: Date.now() });
-    return;
-  }
-
-  attempt.count += 1;
-}
-
-function handleAuthError(form: any, error: AuthError): AuthResult {
-  let errorType: AuthErrorType = "SERVER_ERROR";
-  let field = "password";
-
-  switch (error.message) {
-    case "Invalid login credentials":
-      errorType = "INVALID_CREDENTIALS";
-      field = "password";
-      break;
-    case "Email not confirmed":
-      errorType = "EMAIL_NOT_CONFIRMED";
-      field = "email";
-      break;
-    // Add more cases as needed
-  }
-
-  setError(form, field, AuthErrorMessages[errorType]);
-
-  return {
-    success: false,
-    type: errorType,
-    message: AuthErrorMessages[errorType],
-  };
-}

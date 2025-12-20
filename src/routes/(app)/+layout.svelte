@@ -6,9 +6,7 @@
   let { children } = $props();
 </script>
 
-<Sidebar.Provider
-  style="--sidebar-width: calc(var(--spacing) * 72); --header-height: calc(var(--spacing) * 12);"
->
+<Sidebar.Provider style=" --header-height: calc(var(--spacing) * 12);">
   <AppSidebar variant="inset" />
   <Sidebar.Inset>
     <AppHeader />

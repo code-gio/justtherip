@@ -46,6 +46,9 @@ export const actions: Actions = {
     const { email } = form.data;
     const clientIp = getClientAddress();
 
+    // Clean up expired rate limit entries
+    cleanupExpiredRateLimits();
+
     try {
       // Check rate limiting
       const rateLimitCheck = await checkRateLimit(clientIp, email);
@@ -66,9 +69,6 @@ export const actions: Actions = {
         await recordFailedAttempt(clientIp, email);
         return handleAuthError(form, error);
       }
-
-      // Log successful password reset request
-      console.info(`Password reset requested for email: ${email}`);
 
       // Clear rate limiting on success
       rateLimitStore.delete(getRateLimitKey(clientIp, email));
@@ -190,12 +190,13 @@ function handleAuthError(form: any, error: AuthError) {
   });
 }
 
-// Optional: Cleanup old rate limit entries periodically
-setInterval(() => {
+// Cleanup old rate limit entries on-demand instead of using setInterval
+// This prevents memory leaks in serverless environments
+function cleanupExpiredRateLimits() {
   const now = Date.now();
   for (const [key, value] of rateLimitStore.entries()) {
     if (now - value.timestamp > RATE_LIMIT_WINDOW) {
       rateLimitStore.delete(key);
     }
   }
-}, 60000); // Clean up every minute
+}

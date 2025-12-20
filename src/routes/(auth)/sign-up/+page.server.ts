@@ -9,6 +9,7 @@ import {
   type AuthErrorType,
   type AuthResult,
 } from "$lib/types/auth.js";
+import { handleAuthError, handleUnexpectedError } from "$lib/utils/auth-errors";
 
 const AUTH_FORM_ID = "sign-up-form";
 
@@ -92,70 +93,13 @@ export const actions: Actions = {
       };
     } catch (error) {
       console.error("Signup error:", error);
-      return handleUnexpectedError(form, error);
+      const result = handleUnexpectedError(form, error);
+      return fail(500, {
+        form,
+        type: result.type,
+        message: result.message,
+      });
     }
   },
 };
 
-function handleAuthError(form: any, error: AuthError): AuthResult {
-  console.error("Auth error:", error);
-  let errorType: AuthErrorType = "SERVER_ERROR";
-
-  const errorMessages: Record<
-    string,
-    { field: keyof typeof form.data; message: string }
-  > = {
-    "Invalid login credentials": {
-      field: "password",
-      message: "Invalid credentials",
-    },
-    "Email already registered": {
-      field: "email",
-      message: "This email is already registered",
-    },
-    "Signup disabled": {
-      field: "email",
-      message: "Signups are currently disabled",
-    },
-    "Invalid email": {
-      field: "email",
-      message: "Please enter a valid email address",
-    },
-  };
-
-  const errorInfo = errorMessages[error.message] || {
-    field: "email",
-    message: "An error occurred during signup",
-  };
-
-  return {
-    success: false,
-    type: errorType,
-    message: errorInfo.message,
-  };
-}
-
-function handleUnexpectedError(form: any, error: any): AuthResult {
-  let errorType: AuthErrorType = "SERVER_ERROR";
-  let field = "password";
-
-  switch (error.message) {
-    case "Invalid login credentials":
-      errorType = "INVALID_CREDENTIALS";
-      field = "password";
-      break;
-    case "Email not confirmed":
-      errorType = "EMAIL_NOT_CONFIRMED";
-      field = "email";
-      break;
-    // Add more cases as needed
-  }
-
-  setError(form, field, AuthErrorMessages[errorType]);
-
-  return {
-    success: false,
-    type: errorType,
-    message: AuthErrorMessages[errorType],
-  };
-}

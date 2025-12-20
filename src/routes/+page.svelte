@@ -29,6 +29,7 @@
     HomeGames,
     HomeFeatures,
     HomeCta,
+    HomeFooter,
   } from "$lib/components/home";
 </script>
 
@@ -54,6 +55,7 @@
   <HomeGames />
   <HomeFeatures />
   <HomeCta />
+  <HomeFooter />
 </div>
 
 <style>

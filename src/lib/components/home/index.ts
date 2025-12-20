@@ -6,4 +6,5 @@ export { default as HomeWhy } from "./home-why.svelte";
 export { default as HomeGames } from "./home-games.svelte";
 export { default as HomeFeatures } from "./home-features.svelte";
 export { default as HomeCta } from "./home-cta.svelte";
+export { default as HomeFooter } from "./home-footer.svelte";
 

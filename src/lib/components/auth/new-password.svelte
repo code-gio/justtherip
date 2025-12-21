@@ -59,7 +59,7 @@
       }
 
       toast.success("Reset password successfully");
-      goto("/dashboard");
+      goto("/packs");
     } catch (error) {
       console.error("Error reset password:", error);
       toast.error(
@@ -144,11 +144,7 @@
       </Button>
     </div>
     {#if errors.repeat_password}
-      <p
-        class="text-sm text-red-500"
-        id="repeat-password-error"
-        role="alert"
-      >
+      <p class="text-sm text-red-500" id="repeat-password-error" role="alert">
         {errors.repeat_password}
       </p>
     {/if}

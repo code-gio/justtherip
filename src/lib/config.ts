@@ -31,15 +31,16 @@ export const socialLinks: SocialLink[] = [
 
 export const navMain = [
   {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: IconDashboard,
-  },
-  {
     title: "Packs",
     url: "/packs",
     icon: IconPackages,
   },
+  {
+    title: "Dashboard",
+    url: "/dashboard",
+    icon: IconDashboard,
+  },
+
   {
     title: "Inventory",
     url: "/inventory",

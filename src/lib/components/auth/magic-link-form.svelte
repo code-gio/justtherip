@@ -8,7 +8,7 @@
 	import { IconMail, IconLoader2 } from '@tabler/icons-svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 
-	const { data }: { data: SuperValidated<Infer<MagicLinkSchema>> } = $props();
+	let { data }: { data: SuperValidated<Infer<MagicLinkSchema>> } = $props();
 
 	let isSubmitting = $state(false);
 	let emailSent = $state(false);
@@ -29,7 +29,7 @@
 		}, 1000);
 	}
 
-	const form = superForm(data, {
+	const form = superForm(() => data, {
 		validators: zodClient(magicLinkSchema),
 		clearOnSubmit: 'errors-and-message',
 		resetForm: false,

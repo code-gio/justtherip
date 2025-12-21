@@ -11,7 +11,7 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 
-	const { data }: { data: SuperValidated<Infer<SignUpSchema>> } = $props();
+	let { data }: { data: SuperValidated<Infer<SignUpSchema>> } = $props();
 
 	let showPassword = $state(false);
 	let isSubmitting = $state(false);
@@ -78,7 +78,7 @@
 		}
 	}
 
-	const form = superForm(data, {
+	const form = superForm(() => data, {
 		validators: zodClient(signUpSchema),
 		onSubmit: () => {
 			isSubmitting = true;

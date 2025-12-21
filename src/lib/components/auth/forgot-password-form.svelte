@@ -9,7 +9,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Alert from '$lib/components/ui/alert';
 
-	const { data }: { data: SuperValidated<Infer<ForgotPasswordSchema>> } = $props();
+	let { data }: { data: SuperValidated<Infer<ForgotPasswordSchema>> } = $props();
 
 	let isSubmitting = $state(false);
 	let emailSent = $state(false);
@@ -34,7 +34,7 @@
 		return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
 	}
 
-	const form = superForm(data, {
+	const form = superForm(() => data, {
 		validators: zodClient(forgotPasswordSchema),
 		clearOnSubmit: 'errors-and-message',
 		resetForm: false,

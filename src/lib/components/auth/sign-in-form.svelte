@@ -10,12 +10,12 @@
     import { AuthErrorMessages } from '$lib/types/auth';
     import { goto } from '$app/navigation';
 
-	const { data } : {data:SuperValidated<Infer<SignInSchema>>} = $props();
+	let { data } : {data:SuperValidated<Infer<SignInSchema>>} = $props();
 
 	let showPassword = $state(false);
 	let isSubmitting = $state(false);
 
-	const form = superForm(data, {
+	const form = superForm(() => data, {
 		validators: zodClient(signInSchema),
 		onSubmit: () => {
 			isSubmitting = true;

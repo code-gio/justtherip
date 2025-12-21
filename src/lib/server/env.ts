@@ -15,7 +15,7 @@ const envSchema = z.object({
   // Public Supabase configuration
   PUBLIC_SUPABASE_URL: z
     .string()
-    .url("PUBLIC_SUPABASE_URL must be a valid URL")
+    .url({ message: "PUBLIC_SUPABASE_URL must be a valid URL" })
     .startsWith("https://", "PUBLIC_SUPABASE_URL must use HTTPS"),
 
   PUBLIC_SUPABASE_PUBLISHABLE_KEY: z
@@ -39,8 +39,8 @@ export const env = (() => {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errorMessages = error.errors
-        .map((err) => `  - ${err.path.join(".")}: ${err.message}`)
+      const errorMessages = error.issues
+        .map((err: z.ZodIssue) => `  - ${err.path.join(".")}: ${err.message}`)
         .join("\n");
 
       throw new Error(

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import NavDocuments from "$lib/components/nav/nav-admin.svelte";
+  import NavAdmin from "$lib/components/nav/nav-admin.svelte";
   import NavMain from "$lib/components/nav/nav-main.svelte";
   import NavSecondary from "./nav-secondary.svelte";
   import NavUser from "./nav-user.svelte";
@@ -27,7 +27,7 @@
   </Sidebar.Header>
   <Sidebar.Content>
     <NavMain />
-    <NavDocuments />
+    <!--  <NavDocuments /> -->
     <NavSecondary class="mt-auto" />
   </Sidebar.Content>
   <Sidebar.Footer>

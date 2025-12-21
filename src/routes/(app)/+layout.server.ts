@@ -1,5 +1,6 @@
 import { redirect } from "@sveltejs/kit";
 import type { LayoutServerLoad } from "./$types";
+import { getUserRipBalance } from "$lib/server/rips";
 
 export const load: LayoutServerLoad = async ({
   locals: { safeGetSession, supabase },
@@ -11,16 +12,15 @@ export const load: LayoutServerLoad = async ({
     redirect(303, "/sign-in");
   }
 
-  // Fetch user profile from profiles table
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  // Fetch user profile and balance in parallel
+  const [profileResult, ripBalance] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    getUserRipBalance(user.id),
+  ]);
 
-  console.log(profile);
   return {
     url: url.origin,
-    profile,
+    profile: profileResult.data,
+    ripBalance: ripBalance ?? 0,
   };
 };

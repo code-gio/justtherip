@@ -1,15 +1,26 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { Separator } from "$lib/components/ui/separator/index.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
   import DarkModeToggle from "$lib/components/shared/dark-mode-toggle.svelte";
+  import HeaderRips from "./header-rips.svelte";
+  import HeaderOdds from "./header-odds.svelte";
+  import HeaderInfo from "./header-info.svelte";
   import { navMain, adminNav, navSecondary, userNav } from "$lib/config";
-  import { IconCoin, IconPlus, IconHistory, IconWallet } from "@tabler/icons-svelte";
 
-  let { ripBalance = 0 }: { ripBalance?: number } = $props();
+  interface CardTier {
+    id: string;
+    name: string;
+    probability: number;
+    min_value_cents: number;
+    max_value_cents: number;
+    color_hex: string;
+  }
+
+  let {
+    ripBalance = 0,
+    tiers = [],
+  }: { ripBalance?: number; tiers?: CardTier[] } = $props();
 
   const allNavItems = [...navMain, ...adminNav, ...navSecondary, ...userNav];
 
@@ -39,35 +50,9 @@
     />
     <h1 class="text-base font-medium">{currentTitle}</h1>
     <div class="ms-auto flex items-center gap-2">
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          {#snippet child({ props })}
-            <Button {...props} variant="outline" size="sm" class="gap-2">
-              <IconCoin size={16} class="text-amber-500" />
-              <span class="font-semibold">{ripBalance.toFixed(2)}</span>
-              <span class="text-muted-foreground text-xs">Rips</span>
-            </Button>
-          {/snippet}
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content class="w-48" align="end">
-          <DropdownMenu.Label>Your Balance</DropdownMenu.Label>
-          <DropdownMenu.Separator />
-          <DropdownMenu.Group>
-            <DropdownMenu.Item onSelect={() => goto("/store")}>
-              <IconPlus size={16} />
-              Get More Rips
-            </DropdownMenu.Item>
-            <DropdownMenu.Item onSelect={() => goto("/wallet")}>
-              <IconWallet size={16} />
-              Wallet
-            </DropdownMenu.Item>
-            <DropdownMenu.Item onSelect={() => goto("/wallet")}>
-              <IconHistory size={16} />
-              Transaction History
-            </DropdownMenu.Item>
-          </DropdownMenu.Group>
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
+      <HeaderInfo />
+      <HeaderOdds {tiers} />
+      <HeaderRips balance={ripBalance} />
       <DarkModeToggle />
     </div>
   </div>

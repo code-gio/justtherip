@@ -1,39 +1,39 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
-  import * as Card from "$lib/components/ui/card";
   import { Badge } from "$lib/components/ui/badge";
   import { toast } from "svelte-sonner";
   import {
     IconSparkles,
     IconLoader2,
-    IconPackage,
-    IconTrophy,
+    IconCoin,
+    IconX,
+    IconChevronRight,
+    IconShoppingCart,
   } from "@tabler/icons-svelte";
-  import { invalidateAll } from "$app/navigation";
+  import { invalidateAll, goto } from "$app/navigation";
 
   let { data } = $props();
-  let { balance, tiers } = $derived(data);
+  let { balance } = $derived(data);
 
   let isOpening = $state(false);
   let pulledCard = $state<any>(null);
   let showCardReveal = $state(false);
+  let packHover = $state(false);
 
   async function openPack() {
+    if (balance < 1) {
+      toast.error("Insufficient Rips! Purchase more from the store.");
+      return;
+    }
+
+    isOpening = true;
+    pulledCard = null;
+    showCardReveal = false;
+
     try {
-      if (balance < 1) {
-        toast.error("Insufficient Rips! Purchase more from the store.");
-        return;
-      }
-
-      isOpening = true;
-      pulledCard = null;
-      showCardReveal = false;
-
       const response = await fetch("/api/packs/open", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
 
@@ -43,12 +43,10 @@
       }
 
       const result = await response.json();
-
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1800));
 
       pulledCard = result.card;
       showCardReveal = true;
-
       await invalidateAll();
 
       toast.success(
@@ -63,221 +61,182 @@
       isOpening = false;
     }
   }
+
+  function closeReveal() {
+    showCardReveal = false;
+    pulledCard = null;
+  }
+
+  function getTierGradient(tierName: string): string {
+    const gradients: Record<string, string> = {
+      Common: "from-slate-400 to-slate-600",
+      Uncommon: "from-emerald-400 to-emerald-600",
+      Rare: "from-blue-400 to-blue-600",
+      Epic: "from-purple-400 to-purple-600",
+      Legendary: "from-amber-400 to-orange-500",
+      "Ultra Chase": "from-rose-400 via-pink-500 to-purple-600",
+    };
+    return gradients[tierName] || "from-gray-400 to-gray-600";
+  }
 </script>
 
-<div class="max-w-6xl space-y-6">
-  <div class="grid md:grid-cols-2 gap-8">
-    <!-- Pack Opening Section -->
-    <div>
-      <Card.Root class="relative overflow-hidden">
-        <Card.Header class="text-center">
-          <div class="mb-4">
-            <div class="mx-auto w-24 h-24 rounded-full bg-primary flex items-center justify-center">
-              <IconPackage size={48} class="text-primary-foreground" />
+<div class="relative min-h-[calc(100vh-8rem)] flex flex-col">
+  <!-- Background Effects -->
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div
+      class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse"
+    ></div>
+    <div
+      class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse"
+      style="animation-delay: 1s"
+    ></div>
+  </div>
+
+  <!-- Main Pack Area -->
+  <div class="flex-1 flex flex-col items-center justify-center relative z-10">
+    {#if showCardReveal && pulledCard}
+      <!-- Card Reveal -->
+      <div
+        class="animate-in fade-in zoom-in-95 duration-500 flex flex-col items-center"
+      >
+        <div class="relative">
+          <!-- Glow Effect -->
+          <div
+            class="absolute inset-0 bg-gradient-to-r {getTierGradient(
+              pulledCard.tier_name
+            )} rounded-3xl blur-2xl opacity-60 scale-110 animate-pulse"
+          ></div>
+
+          <!-- Card -->
+          <div
+            class="relative w-72 sm:w-80 aspect-[3/4] rounded-3xl bg-gradient-to-br {getTierGradient(
+              pulledCard.tier_name
+            )} p-1 shadow-2xl"
+          >
+            <div
+              class="w-full h-full rounded-[22px] bg-card flex flex-col items-center justify-center p-6 text-center"
+            >
+              <Badge class="mb-4 text-sm px-4 py-1.5">{pulledCard.tier_name}</Badge>
+
+              <div class="text-5xl sm:text-6xl font-black mb-2 bg-gradient-to-br {getTierGradient(pulledCard.tier_name)} bg-clip-text text-transparent">
+                ${pulledCard.value_usd}
+              </div>
+
+              {#if pulledCard.card_name}
+                <p class="text-lg font-semibold mb-1">{pulledCard.card_name}</p>
+              {/if}
+
+              {#if pulledCard.set_name}
+                <p class="text-sm text-muted-foreground">{pulledCard.set_name}</p>
+              {/if}
+
+              {#if pulledCard.rarity}
+                <p class="text-xs text-muted-foreground mt-1">{pulledCard.rarity}</p>
+              {/if}
             </div>
           </div>
-          <Card.Title class="text-2xl">Standard Pack</Card.Title>
-          <Card.Description class="text-xl font-bold text-primary">
-            1 Rip per pack
-          </Card.Description>
-        </Card.Header>
+        </div>
 
-        <Card.Content class="space-y-4">
-          <div class="text-center text-sm text-muted-foreground">
-            <p>Open a pack to receive 1 random card</p>
-            <p>Card values range from $0.01 to $500</p>
-          </div>
-
+        <div class="flex gap-3 mt-8">
+          <Button variant="outline" size="lg" onclick={closeReveal}>
+            <IconX size={18} class="mr-2" />
+            Close
+          </Button>
           <Button
-            class="w-full"
+            size="lg"
             onclick={openPack}
             disabled={isOpening || balance < 1}
-            size="lg"
           >
-            {#if isOpening}
-              <IconLoader2 class="mr-2 animate-spin" size={20} />
-              Opening Pack...
-            {:else}
-              <IconSparkles class="mr-2" size={20} />
-              Open Pack (1 Rip)
-            {/if}
+            <IconSparkles size={18} class="mr-2" />
+            Open Another
           </Button>
+          <Button variant="secondary" size="lg" onclick={() => goto("/inventory")}>
+            Inventory
+            <IconChevronRight size={18} class="ml-1" />
+          </Button>
+        </div>
+      </div>
+    {:else}
+      <!-- Pack Display -->
+      <div class="flex flex-col items-center">
+        <button
+          onclick={openPack}
+          disabled={isOpening || balance < 1}
+          onmouseenter={() => (packHover = true)}
+          onmouseleave={() => (packHover = false)}
+          class="group relative cursor-pointer disabled:cursor-not-allowed transition-transform duration-300 {packHover && !isOpening ? 'scale-105' : ''}"
+        >
+          <!-- Animated Glow Ring -->
+          <div
+            class="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500 {isOpening ? 'opacity-70 animate-pulse' : ''}"
+          ></div>
 
-          {#if balance < 1}
-            <p class="text-center text-sm text-destructive">
-              Insufficient Rips. <a
-                href="/store"
-                class="underline hover:text-destructive/80">Purchase more</a
+          <!-- Pack Container -->
+          <div
+            class="relative w-64 sm:w-72 aspect-[3/4] rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-white/10 shadow-2xl overflow-hidden"
+          >
+            <!-- Shine Effect -->
+            <div
+              class="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+            ></div>
+
+            <!-- Pack Design -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center p-6">
+              <!-- Logo Area -->
+              <div
+                class="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mb-4 shadow-lg {isOpening ? 'animate-bounce' : ''}"
               >
+                <IconSparkles size={40} class="text-white" />
+              </div>
+
+              <h2 class="text-2xl font-black text-white mb-1">RIP PACK</h2>
+              <p class="text-white/60 text-sm mb-6">Standard Edition</p>
+
+              <!-- Price Tag -->
+              <div
+                class="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur"
+              >
+                <IconCoin size={18} class="text-amber-400" />
+                <span class="font-bold text-white">1 Rip</span>
+              </div>
+            </div>
+
+            <!-- Opening Animation Overlay -->
+            {#if isOpening}
+              <div
+                class="absolute inset-0 bg-gradient-to-t from-amber-500/30 via-transparent to-transparent animate-pulse"
+              ></div>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <IconLoader2 size={48} class="text-white animate-spin" />
+              </div>
+            {/if}
+          </div>
+        </button>
+
+        <!-- CTA Text -->
+        <div class="mt-8 text-center">
+          {#if balance < 1}
+            <p class="text-destructive mb-4">
+              You need Rips to open packs
+            </p>
+            <Button onclick={() => goto("/store")}>
+              <IconShoppingCart size={18} class="mr-2" />
+              Get Rips
+            </Button>
+          {:else if isOpening}
+            <p class="text-lg text-muted-foreground animate-pulse">
+              Opening your pack...
+            </p>
+          {:else}
+            <p class="text-lg text-muted-foreground mb-2">
+              Click the pack to open
+            </p>
+            <p class="text-sm text-muted-foreground/70">
+              Win cards worth up to <span class="text-amber-500 font-semibold">$500</span>
             </p>
           {/if}
-        </Card.Content>
-      </Card.Root>
-
-      <!-- Tier Probabilities -->
-      <Card.Root class="mt-6">
-        <Card.Header>
-          <Card.Title>Tier Probabilities</Card.Title>
-        </Card.Header>
-        <Card.Content class="space-y-2">
-          {#each tiers as tier (tier.id)}
-            {@const percentage = (tier.probability * 100).toFixed(2)}
-            {@const valueRange = `$${(tier.min_value_cents / 100).toFixed(2)} - $${(tier.max_value_cents / 100).toFixed(2)}`}
-
-            <div class="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
-              <div class="flex items-center gap-2">
-                <div
-                  class="w-3 h-3 rounded-full"
-                  style="background-color: {tier.color_hex}"
-                ></div>
-                <span class="font-medium">{tier.name}</span>
-              </div>
-              <div class="text-right text-sm">
-                <div class="font-bold">{percentage}%</div>
-                <div class="text-muted-foreground text-xs">{valueRange}</div>
-              </div>
-            </div>
-          {/each}
-        </Card.Content>
-      </Card.Root>
-    </div>
-
-    <!-- Card Reveal Section -->
-    <div>
-      {#if showCardReveal && pulledCard}
-        <Card.Root class="relative overflow-hidden animate-in fade-in zoom-in duration-500">
-          <Card.Header class="text-center relative z-10">
-            <Badge class="mx-auto mb-4 text-lg px-4 py-2">
-              {pulledCard.tier_name}
-            </Badge>
-
-            <div class="mb-6">
-              <div class="mx-auto w-32 h-32 rounded-full bg-primary flex items-center justify-center">
-                <IconTrophy size={64} class="text-primary-foreground" />
-              </div>
-            </div>
-
-            <Card.Title class="text-3xl mb-2">
-              ${pulledCard.value_usd}
-            </Card.Title>
-
-            {#if pulledCard.card_name}
-              <Card.Description class="text-lg">
-                {pulledCard.card_name}
-              </Card.Description>
-            {/if}
-          </Card.Header>
-
-          <Card.Content class="space-y-4 relative z-10">
-            {#if pulledCard.set_name || pulledCard.rarity}
-              <div class="text-center text-sm text-muted-foreground">
-                {#if pulledCard.set_name}
-                  <p>{pulledCard.set_name}</p>
-                {/if}
-                {#if pulledCard.rarity}
-                  <p>{pulledCard.rarity}</p>
-                {/if}
-              </div>
-            {/if}
-
-            <div class="flex gap-2">
-              <Button class="flex-1" variant="outline" onclick={openPack}>
-                Open Another
-              </Button>
-              <Button class="flex-1" href="/inventory">
-                View Inventory
-              </Button>
-            </div>
-          </Card.Content>
-        </Card.Root>
-
-        <Card.Root class="mt-6">
-          <Card.Header>
-            <Card.Title>What's Next?</Card.Title>
-          </Card.Header>
-          <Card.Content class="space-y-3 text-sm text-muted-foreground">
-            <div class="flex items-start gap-2">
-              <span class="text-primary font-bold">•</span>
-              <p>
-                View your full collection in the <a
-                  href="/inventory"
-                  class="underline hover:text-primary">Inventory</a
-                >
-              </p>
-            </div>
-            <div class="flex items-start gap-2">
-              <span class="text-primary font-bold">•</span>
-              <p>
-                Sell cards back for 85% of their value to get more Rips
-              </p>
-            </div>
-            <div class="flex items-start gap-2">
-              <span class="text-primary font-bold">•</span>
-              <p>
-                Keep opening packs to build your collection and win big!
-              </p>
-            </div>
-          </Card.Content>
-        </Card.Root>
-      {:else}
-        <Card.Root>
-          <Card.Header>
-            <Card.Title>How It Works</Card.Title>
-          </Card.Header>
-          <Card.Content class="space-y-4">
-            <div class="flex items-start gap-3">
-              <div class="p-2 rounded-full bg-muted flex-shrink-0">
-                <span class="text-foreground font-bold">1</span>
-              </div>
-              <div>
-                <h3 class="font-semibold mb-1">Open a Pack</h3>
-                <p class="text-sm text-muted-foreground">
-                  Click "Open Pack" to spend 1 Rip and receive a random card
-                </p>
-              </div>
-            </div>
-
-            <div class="flex items-start gap-3">
-              <div class="p-2 rounded-full bg-muted flex-shrink-0">
-                <span class="text-foreground font-bold">2</span>
-              </div>
-              <div>
-                <h3 class="font-semibold mb-1">Win Valuable Cards</h3>
-                <p class="text-sm text-muted-foreground">
-                  Cards are drawn based on tier probabilities. Higher tiers
-                  are rarer but more valuable!
-                </p>
-              </div>
-            </div>
-
-            <div class="flex items-start gap-3">
-              <div class="p-2 rounded-full bg-muted flex-shrink-0">
-                <span class="text-foreground font-bold">3</span>
-              </div>
-              <div>
-                <h3 class="font-semibold mb-1">Sell or Collect</h3>
-                <p class="text-sm text-muted-foreground">
-                  Keep rare cards in your collection or sell them back for
-                  85% of their value in Rips
-                </p>
-              </div>
-            </div>
-
-            <div class="flex items-start gap-3">
-              <div class="p-2 rounded-full bg-muted flex-shrink-0">
-                <span class="text-foreground font-bold">4</span>
-              </div>
-              <div>
-                <h3 class="font-semibold mb-1">Ultra Chase Limit</h3>
-                <p class="text-sm text-muted-foreground">
-                  You can only pull 1 Ultra Chase card per day to keep things
-                  fair for everyone!
-                </p>
-              </div>
-            </div>
-          </Card.Content>
-        </Card.Root>
-      {/if}
-    </div>
+        </div>
+      </div>
+    {/if}
   </div>
 </div>

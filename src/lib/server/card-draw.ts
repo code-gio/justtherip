@@ -40,7 +40,7 @@ export async function getCardTiers(): Promise<CardTier[]> {
   const { data, error } = await adminClient
     .from("card_tiers")
     .select("*")
-    .eq("active", true)
+    .eq("is_active", true)
     .order("probability", { ascending: false });
 
   if (error) {

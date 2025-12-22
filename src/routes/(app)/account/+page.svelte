@@ -286,11 +286,13 @@
           <div class="flex items-center justify-between">
             <div class="space-y-1">
               <p class="text-sm font-medium">Password</p>
-              <p class="text-xs text-muted-foreground">
-                Last changed: Never
-              </p>
+              <p class="text-xs text-muted-foreground">Last changed: Never</p>
             </div>
-            <Button variant="outline" href="/reset-password/confirm" class="gap-2">
+            <Button
+              variant="outline"
+              href="/reset-password/confirm"
+              class="gap-2"
+            >
               <IconKey size={16} />
               Change Password
             </Button>
@@ -310,7 +312,9 @@
           </Card.Description>
         </Card.Header>
         <Card.Content>
-          <div class="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+          <div
+            class="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+          >
             <div class="flex items-center gap-3">
               <div class="p-2 rounded-full bg-primary/10">
                 <IconShield size={20} class="text-primary" />
@@ -350,7 +354,12 @@
                   Sign out of your account on this device.
                 </p>
               </div>
-              <Button variant="destructive" type="submit" disabled={loading} class="gap-2">
+              <Button
+                variant="destructive"
+                type="submit"
+                disabled={loading}
+                class="gap-2"
+              >
                 {#if loading}
                   <IconLoader2 size={16} class="animate-spin" />
                 {:else}

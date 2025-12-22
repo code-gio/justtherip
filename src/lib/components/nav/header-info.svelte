@@ -18,22 +18,39 @@
     <DropdownMenu.Separator />
     <div class="p-2 space-y-3 text-sm">
       <div class="flex gap-2">
-        <span class="shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">1</span>
-        <p class="text-muted-foreground">Spend 1 Rip to open a pack and receive a random card</p>
+        <span
+          class="shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold"
+          >1</span
+        >
+        <p class="text-muted-foreground">
+          Spend 1 Rip to open a pack and receive a random card
+        </p>
       </div>
       <div class="flex gap-2">
-        <span class="shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">2</span>
-        <p class="text-muted-foreground">Higher tiers are rarer but more valuable</p>
+        <span
+          class="shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold"
+          >2</span
+        >
+        <p class="text-muted-foreground">
+          Higher tiers are rarer but more valuable
+        </p>
       </div>
       <div class="flex gap-2">
-        <span class="shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">3</span>
-        <p class="text-muted-foreground">Sell cards for 85% value or keep them</p>
+        <span
+          class="shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold"
+          >3</span
+        >
+        <p class="text-muted-foreground">
+          Sell cards for 85% value or keep them
+        </p>
       </div>
       <div class="flex gap-2">
-        <span class="shrink-0 w-5 h-5 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 text-xs font-bold">!</span>
+        <span
+          class="shrink-0 w-5 h-5 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 text-xs font-bold"
+          >!</span
+        >
         <p class="text-muted-foreground">Max 1 Ultra Chase per day</p>
       </div>
     </div>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
-

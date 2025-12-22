@@ -31,7 +31,9 @@
       {@const percentage = (tier.probability * 100).toFixed(2)}
       {@const minVal = (tier.min_value_cents / 100).toFixed(2)}
       {@const maxVal = (tier.max_value_cents / 100).toFixed(2)}
-      <DropdownMenu.Item class="flex items-center justify-between cursor-default">
+      <DropdownMenu.Item
+        class="flex items-center justify-between cursor-default"
+      >
         <div class="flex items-center gap-2">
           <div
             class="w-3 h-3 rounded-full"
@@ -47,4 +49,3 @@
     {/each}
   </DropdownMenu.Content>
 </DropdownMenu.Root>
-

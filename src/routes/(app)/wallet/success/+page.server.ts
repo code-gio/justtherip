@@ -35,32 +35,13 @@ export const load: PageServerLoad = async ({ locals, url }) => {
       const rips = parseInt(checkoutSession.metadata?.rips || "0", 10);
 
       if (userId && bundleId && rips) {
-        // Check if this checkout session was already processed
-        const { data: existingTransaction } = await supabaseAdmin
-          .from("rip_transactions")
-          .select("id")
-          .eq("user_id", userId)
-          .contains("metadata", { stripe_checkout_session_id: sessionId })
-          .maybeSingle();
-
-        if (existingTransaction) {
-          console.log(
-            `ℹ️ Checkout ${sessionId} already processed (duplicate prevention)`
-          );
-          return {
-            success: true,
-            alreadyProcessed: true,
-            sessionId,
-          };
-        }
-
-        // Add Rips to user's account (in case webhook hasn't fired yet)
-        // For local development, this acts as webhook backup
+        // Try to add Rips - database unique constraint prevents duplicates
+        // This is safe to call multiple times (idempotent)
         const result = await addRips(userId, rips, {
           stripe_checkout_session_id: sessionId,
           bundle_id: bundleId,
           amount_cents: checkoutSession.amount_total || 0,
-          note: "Added via success page (local dev - webhook backup)",
+          source: "success_page",
         });
 
         if (result.success) {
@@ -73,9 +54,34 @@ export const load: PageServerLoad = async ({ locals, url }) => {
             balance: result.balance,
           };
         } else {
+          // Check if error is due to duplicate (already processed)
+          if (
+            result.error?.includes("unique_stripe_checkout_session") ||
+            result.error?.includes("duplicate")
+          ) {
+            console.log(
+              `ℹ️ Checkout ${sessionId} already processed (duplicate prevented by DB)`
+            );
+
+            // Get current balance to show user
+            const { data: balanceData } = await supabaseAdmin
+              .from("rip_balances")
+              .select("balance")
+              .eq("user_id", userId)
+              .maybeSingle();
+
+            return {
+              success: true,
+              alreadyProcessed: true,
+              balance: balanceData?.balance,
+              sessionId,
+            };
+          }
+
+          // Real error
           console.error("Failed to add Rips:", result.error);
           return {
-            error: "Failed to credit Rips",
+            error: "Failed to credit Rips. Please contact support if your balance is incorrect.",
           };
         }
       }

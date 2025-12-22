@@ -64,4 +64,3 @@
 </DropdownMenu.Root>
 
 <PurchaseRipsDialog bind:open={showPurchaseDialog} {bundles} />
-

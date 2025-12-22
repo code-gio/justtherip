@@ -12,7 +12,9 @@ export const load: PageServerLoad = async ({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select(`username, full_name, website, avatar_url`)
+    .select(
+      `id, username, email, avatar_url, bio, display_name, total_packs_opened, best_pull_value_cents, profile_visibility, created_at, updated_at`
+    )
     .eq("id", session.user.id)
     .single();
 
@@ -22,38 +24,70 @@ export const load: PageServerLoad = async ({
 export const actions: Actions = {
   update: async ({ request, locals: { supabase, safeGetSession } }) => {
     const formData = await request.formData();
-    const fullName = formData.get("fullName") as string;
+    const displayName = formData.get("displayName") as string;
     const username = formData.get("username") as string;
-    const website = formData.get("website") as string;
+    const bio = formData.get("bio") as string;
     const avatarUrl = formData.get("avatarUrl") as string;
 
     const { session } = await safeGetSession();
 
+    if (!session) {
+      return fail(401, { message: "Unauthorized" });
+    }
+
     const { error } = await supabase.from("profiles").upsert({
-      id: session?.user.id,
-      full_name: fullName,
-      username,
-      website,
-      avatar_url: avatarUrl,
-      updated_at: new Date(),
+      id: session.user.id,
+      display_name: displayName || null,
+      username: username || null,
+      bio: bio || null,
+      avatar_url: avatarUrl || null,
+      updated_at: new Date().toISOString(),
     });
 
     if (error) {
       return fail(500, {
-        fullName,
+        displayName,
         username,
-        website,
+        bio,
         avatarUrl,
+        message: error.message,
       });
     }
 
     return {
-      fullName,
+      displayName,
       username,
-      website,
+      bio,
       avatarUrl,
     };
   },
+
+  updateVisibility: async ({ request, locals: { supabase, safeGetSession } }) => {
+    const formData = await request.formData();
+    const profileVisibility = formData.get("profileVisibility") as string;
+
+    const { session } = await safeGetSession();
+
+    if (!session) {
+      return fail(401, { message: "Unauthorized" });
+    }
+
+    const { error } = await supabase.from("profiles").upsert({
+      id: session.user.id,
+      profile_visibility: profileVisibility || "public",
+      updated_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      return fail(500, {
+        profileVisibility,
+        message: error.message,
+      });
+    }
+
+    return { profileVisibility };
+  },
+
   signout: async ({ locals: { supabase, safeGetSession } }) => {
     const { session } = await safeGetSession();
     if (session) {

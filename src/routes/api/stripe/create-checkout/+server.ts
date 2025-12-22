@@ -43,6 +43,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       return json({ error: "Bundle not found or inactive" }, { status: 404 });
     }
 
+    // Check if user has existing Stripe customer ID
+    const { supabaseAdmin } = await import("$lib/server/rips");
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("stripe_customer_id")
+      .eq("id", user.id)
+      .maybeSingle();
+
     // Create Stripe Checkout Session
     const checkoutSession = await createCheckoutSession({
       bundleId: bundle.id,
@@ -51,6 +59,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       priceCents: bundle.price_cents,
       userId: user.id,
       userEmail: user.email!,
+      customerId: profile?.stripe_customer_id || undefined,
     });
 
     return json({

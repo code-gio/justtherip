@@ -21,6 +21,7 @@ export async function createCheckoutSession({
   priceCents,
   userId,
   userEmail,
+  customerId,
 }: {
   bundleId: string;
   bundleName: string;
@@ -28,10 +29,12 @@ export async function createCheckoutSession({
   priceCents: number;
   userId: string;
   userEmail: string;
+  customerId?: string;
 }): Promise<Stripe.Checkout.Session> {
-  const session = await stripe.checkout.sessions.create({
+  const sessionConfig: Stripe.Checkout.SessionCreateParams = {
     mode: "payment",
-    customer_email: userEmail,
+    // Use existing customer or create new one
+    ...(customerId ? { customer: customerId } : { customer_email: userEmail }),
     line_items: [
       {
         price_data: {
@@ -60,9 +63,9 @@ export async function createCheckoutSession({
         rips: rips.toString(),
       },
     },
-  });
+  };
 
-  return session;
+  return await stripe.checkout.sessions.create(sessionConfig);
 }
 
 /**

@@ -46,8 +46,8 @@ export async function createCheckoutSession({
         quantity: 1,
       },
     ],
-    success_url: `${PUBLIC_APP_URL}/store/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${PUBLIC_APP_URL}/store?canceled=true`,
+    success_url: `${PUBLIC_APP_URL}/wallet/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${PUBLIC_APP_URL}/wallet?canceled=true`,
     metadata: {
       bundle_id: bundleId,
       user_id: userId,

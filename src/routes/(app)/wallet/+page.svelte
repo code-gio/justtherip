@@ -7,6 +7,9 @@
   import * as Empty from "$lib/components/ui/empty/index.js";
   import PurchaseRipsDialog from "$lib/components/shared/purchase-rips-dialog.svelte";
   import { invalidateAll } from "$app/navigation";
+  import { page } from "$app/stores";
+  import { toast } from "svelte-sonner";
+  import { onMount } from "svelte";
   import {
     IconCoin,
     IconSparkles,
@@ -21,6 +24,18 @@
 
   let isLoading = $state(false);
   let showPurchaseDialog = $state(false);
+
+  // Check if user canceled checkout
+  onMount(() => {
+    const canceled = $page.url.searchParams.get("canceled");
+    if (canceled) {
+      toast.info("Purchase canceled. No charges were made.");
+      // Clean up URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete("canceled");
+      window.history.replaceState({}, "", url.toString());
+    }
+  });
 
   function formatTransactionType(transaction: any): { action: string; description: string; type: "credit" | "debit" } {
     const amount = transaction.amount;

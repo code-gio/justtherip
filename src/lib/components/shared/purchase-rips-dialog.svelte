@@ -73,7 +73,7 @@
       </Dialog.Description>
     </Dialog.Header>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-4">
+    <div class="grid grid-cols-2 gap-4 py-4">
       {#each bundles as bundle (bundle.id)}
         {@const discountPercent = bundle.discount_percent || 0}
         {@const isPurchasing = purchasingBundleId === bundle.id}

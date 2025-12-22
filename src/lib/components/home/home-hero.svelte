@@ -26,8 +26,8 @@
       </div>
 
       <div class="hero-cta">
-        <a href="/register" class="btn btn-primary"> Start Ripping </a>
-        <a href="/login" class="btn btn-outline"> Log In </a>
+        <a href="/sign-up" class="btn btn-primary"> Start Ripping </a>
+        <a href="/sign-in" class="btn btn-outline"> Log In </a>
       </div>
     </div>
 

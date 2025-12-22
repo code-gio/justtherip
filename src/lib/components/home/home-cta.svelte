@@ -10,7 +10,7 @@
         <span class="accent">rip?</span>
       </h2>
       <p>Create an account and open your first pack today.</p>
-      <a href="/register" class="btn btn-primary btn-lg">
+      <a href="/sign-up" class="btn btn-primary btn-lg">
         <IconSparkles size={20} />
         Start Ripping Now
         <IconArrowRight size={18} />

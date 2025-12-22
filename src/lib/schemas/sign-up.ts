@@ -18,6 +18,7 @@ export const signUpSchema = z.object({
       "Last name can only contain letters, spaces, hyphens, and apostrophes"
     ),
   email: z
+    .string()
     .email("Invalid email address")
     .max(100, "Email must be less than 100 characters")
     .transform((email) => email.toLowerCase().trim()),

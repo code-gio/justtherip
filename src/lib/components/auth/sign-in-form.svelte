@@ -7,7 +7,7 @@
     type Infer,
     superForm,
   } from "sveltekit-superforms";
-  import { zodClient } from "sveltekit-superforms/adapters";
+  import { zod4Client } from "sveltekit-superforms/adapters";
   import Button from "$lib/components/ui/button/button.svelte";
   import { IconEye, IconEyeOff } from "@tabler/icons-svelte";
   import { toast } from "svelte-sonner";
@@ -19,8 +19,8 @@
   let showPassword = $state(false);
   let isSubmitting = $state(false);
 
-  const form = superForm(() => data, {
-    validators: zodClient(signInSchema),
+  const form = superForm(data, {
+    validators: zod4Client(signInSchema),
     onSubmit: () => {
       isSubmitting = true;
     },

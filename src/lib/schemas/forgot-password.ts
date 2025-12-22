@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const forgotPasswordSchema = z.object({
-  email: z.email(),
+  email: z.string().email("Please enter a valid email address"),
 });
 
 export type ForgotPasswordSchema = typeof forgotPasswordSchema;

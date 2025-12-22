@@ -1,6 +1,6 @@
 import { redirect } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
-import { getRipBundles, getUserRipBalance } from "$lib/server/rips";
+import { getUserRipBalance, getRipBundles, getUserTransactions } from "$lib/server/rips";
 
 export const load: PageServerLoad = async ({ locals }) => {
   const { session, user } = await locals.safeGetSession();
@@ -9,14 +9,16 @@ export const load: PageServerLoad = async ({ locals }) => {
     throw redirect(303, "/sign-in");
   }
 
-  // Fetch bundles and user balance in parallel
-  const [bundles, balance] = await Promise.all([
-    getRipBundles(),
+  // Fetch user data in parallel
+  const [balance, bundles, transactions] = await Promise.all([
     getUserRipBalance(user.id),
+    getRipBundles(),
+    getUserTransactions(user.id, 50),
   ]);
 
   return {
-    bundles: bundles || [],
     balance: balance || 0,
+    bundles: bundles || [],
+    transactions: transactions || [],
   };
 };

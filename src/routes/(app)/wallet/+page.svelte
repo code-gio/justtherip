@@ -5,6 +5,8 @@
   import * as Table from "$lib/components/ui/table/index.js";
   import { Skeleton } from "$lib/components/ui/skeleton";
   import * as Empty from "$lib/components/ui/empty/index.js";
+  import PurchaseRipsDialog from "$lib/components/shared/purchase-rips-dialog.svelte";
+  import { invalidateAll } from "$app/navigation";
   import {
     IconCoin,
     IconSparkles,
@@ -14,98 +16,49 @@
     IconReceipt,
   } from "@tabler/icons-svelte";
 
-  // Mock state
-  let balance = $state(42.5);
-  let isLoading = $state(true);
+  let { data } = $props();
+  let { balance, bundles, transactions } = $derived(data);
 
-  // Buy Rips options
-  const buyOptions = $state([
-    { id: "5", rips: 5, price: 5.0, popular: false },
-    { id: "10", rips: 10, price: 9.5, popular: true, discount: 5 },
-    { id: "25", rips: 25, price: 22.5, popular: false, discount: 10 },
-  ]);
+  let isLoading = $state(false);
+  let showPurchaseDialog = $state(false);
 
-  // Mock transaction history
-  const transactions = $state([
-    {
-      id: "1",
-      date: "Dec 20, 2025",
-      action: "Pack Purchase",
-      description: "Pokémon Scarlet & Violet Pack",
-      amount: -1.0,
-      type: "debit",
-    },
-    {
-      id: "2",
-      date: "Dec 20, 2025",
-      action: "Card Sell-Back",
-      description: "Sold Pikachu VMAX",
-      amount: 8.5,
-      type: "credit",
-    },
-    {
-      id: "3",
-      date: "Dec 19, 2025",
-      action: "Pack Purchase",
-      description: "MTG Modern Horizons Pack",
-      amount: -1.0,
-      type: "debit",
-    },
-    {
-      id: "4",
-      date: "Dec 19, 2025",
-      action: "Pack Purchase",
-      description: "Pokémon Base Set Pack",
-      amount: -1.0,
-      type: "debit",
-    },
-    {
-      id: "5",
-      date: "Dec 18, 2025",
-      action: "Rips Purchase",
-      description: "25 Rips Bundle",
-      amount: 25.0,
-      type: "credit",
-    },
-    {
-      id: "6",
-      date: "Dec 17, 2025",
-      action: "Card Sell-Back",
-      description: "Sold Charizard EX",
-      amount: 12.5,
-      type: "credit",
-    },
-    {
-      id: "7",
-      date: "Dec 16, 2025",
-      action: "Pack Purchase",
-      description: "Pokémon Crown Zenith Pack",
-      amount: -1.0,
-      type: "debit",
-    },
-    {
-      id: "8",
-      date: "Dec 15, 2025",
-      action: "Sign-Up Bonus",
-      description: "Welcome to Just the Rip!",
-      amount: 5.0,
-      type: "credit",
-    },
-  ]);
+  function formatTransactionType(transaction: any): { action: string; description: string; type: "credit" | "debit" } {
+    const amount = transaction.amount;
 
-  // Simulate loading
-  $effect(() => {
-    const timer = setTimeout(() => {
-      isLoading = false;
-    }, 600);
-    return () => clearTimeout(timer);
-  });
-
-  function handleBuyRips(optionId: string) {
-    const option = buyOptions.find((o) => o.id === optionId);
-    if (option) {
-      alert(`Demo: Would purchase ${option.rips} Rips for $${option.price.toFixed(2)}`);
+    if (transaction.type === "purchase") {
+      return {
+        action: "Rips Purchase",
+        description: transaction.metadata?.bundle_id ? `${Math.abs(amount)} Rips Bundle` : "Rips purchased",
+        type: "credit",
+      };
+    } else if (transaction.type === "pack_open") {
+      return {
+        action: "Pack Purchase",
+        description: transaction.metadata?.pack_id || "Pack opened",
+        type: "debit",
+      };
+    } else if (transaction.type === "card_sellback") {
+      return {
+        action: "Card Sell-Back",
+        description: `Sold for ${amount.toFixed(2)} Rips`,
+        type: "credit",
+      };
+    } else {
+      return {
+        action: "Transaction",
+        description: transaction.type,
+        type: amount >= 0 ? "credit" : "debit",
+      };
     }
+  }
+
+  function formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    });
   }
 </script>
 
@@ -160,46 +113,22 @@
   </Card.Root>
 
   <!-- Buy Rips Section -->
-  <Card.Root>
-    <Card.Header>
-      <Card.Title class="flex items-center gap-2">
-        <IconPlus size={20} />
-        Buy Rips
-      </Card.Title>
-    </Card.Header>
-    <Card.Content>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {#each buyOptions as option (option.id)}
-          <button
-            class="relative p-6 rounded-xl border-2 transition-all hover:border-primary hover:shadow-md text-left {option.popular ? 'border-primary bg-primary/5' : 'border-border'}"
-            onclick={() => handleBuyRips(option.id)}
-          >
-            {#if option.popular}
-              <Badge class="absolute -top-2.5 left-1/2 -translate-x-1/2">
-                Most Popular
-              </Badge>
-            {/if}
-
-            <div class="text-center space-y-3">
-              <div class="mx-auto w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-                <IconCoin size={24} class="text-primary-foreground" />
-              </div>
-
-              <div>
-                <p class="text-2xl font-bold">{option.rips} Rips</p>
-                <p class="text-xl font-semibold text-primary">
-                  ${option.price.toFixed(2)}
-                </p>
-              </div>
-
-              {#if option.discount}
-                <Badge variant="secondary">
-                  Save {option.discount}%
-                </Badge>
-              {/if}
-            </div>
-          </button>
-        {/each}
+  <Card.Root class="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+    <Card.Content class="p-8">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="text-center md:text-left">
+          <h3 class="text-2xl font-bold mb-2 flex items-center gap-2 justify-center md:justify-start">
+            <IconPlus size={24} class="text-primary" />
+            Need More Rips?
+          </h3>
+          <p class="text-muted-foreground">
+            Purchase Rips to open packs and win valuable cards. Larger bundles save you more!
+          </p>
+        </div>
+        <Button size="lg" onclick={() => (showPurchaseDialog = true)} class="gap-2">
+          <IconCoin size={20} />
+          Buy Rips
+        </Button>
       </div>
     </Card.Content>
   </Card.Root>
@@ -255,13 +184,15 @@
           </Table.Header>
           <Table.Body>
             {#each transactions as tx (tx.id)}
+              {@const formatted = formatTransactionType(tx)}
+
               <Table.Row>
                 <Table.Cell class="font-medium text-muted-foreground">
-                  {tx.date}
+                  {formatDate(tx.created_at)}
                 </Table.Cell>
                 <Table.Cell>
                   <div class="flex items-center gap-2">
-                    {#if tx.type === "credit"}
+                    {#if formatted.type === "credit"}
                       <div class="p-1 rounded bg-primary/20">
                         <IconPlus size={14} class="text-primary" />
                       </div>
@@ -270,15 +201,15 @@
                         <IconMinus size={14} class="text-destructive" />
                       </div>
                     {/if}
-                    <span class="font-medium">{tx.action}</span>
+                    <span class="font-medium">{formatted.action}</span>
                   </div>
                 </Table.Cell>
                 <Table.Cell class="hidden md:table-cell text-muted-foreground">
-                  {tx.description}
+                  {formatted.description}
                 </Table.Cell>
                 <Table.Cell class="text-right">
-                  <span class="font-bold {tx.type === 'credit' ? 'text-primary' : 'text-destructive'}">
-                    {tx.type === "credit" ? "+" : ""}{tx.amount.toFixed(2)} Rips
+                  <span class="font-bold {formatted.type === 'credit' ? 'text-primary' : 'text-destructive'}">
+                    {tx.amount >= 0 ? "+" : ""}{tx.amount.toFixed(2)} Rips
                   </span>
                 </Table.Cell>
               </Table.Row>
@@ -289,3 +220,6 @@
     </Card.Content>
   </Card.Root>
 </div>
+
+<!-- Purchase Dialog -->
+<PurchaseRipsDialog bind:open={showPurchaseDialog} {bundles} />

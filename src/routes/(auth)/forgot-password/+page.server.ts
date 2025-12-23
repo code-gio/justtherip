@@ -65,19 +65,31 @@ export const actions: Actions = {
         redirectTo: `${url.origin}/reset-password/confirm`,
       });
 
-      // Always return success to prevent email enumeration
-      // This prevents attackers from discovering valid email addresses
       if (error) {
-        // Log the error for debugging but don't expose it to the user
         console.error("Password reset error:", error.message);
-        // Still record failed attempt for rate limiting
+
+        // Check for Supabase rate limiting - safe to expose since it doesn't reveal email existence
+        if (
+          error.message.includes("For security purposes") ||
+          error.message.includes("rate limit") ||
+          error.message.toLowerCase().includes("too many requests")
+        ) {
+          await recordFailedAttempt(clientIp, email);
+          return fail(429, {
+            form,
+            type: "RATE_LIMITED",
+            message: error.message,
+          });
+        }
+
+        // For other errors (like user not found), return generic success to prevent enumeration
         await recordFailedAttempt(clientIp, email);
       } else {
         // Clear rate limiting only on actual success
         rateLimitStore.delete(getRateLimitKey(clientIp, email));
       }
 
-      // Return generic success message regardless of whether email exists
+      // Return generic success message for non-rate-limit scenarios
       return {
         form,
         success: true,

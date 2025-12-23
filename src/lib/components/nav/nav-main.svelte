@@ -2,6 +2,13 @@
   import CirclePlusFilledIcon from "@tabler/icons-svelte/icons/circle-plus-filled";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { navMain } from "$lib/config.js";
+  import { page } from "$app/state";
+
+  function isActive(itemUrl: string): boolean {
+    const pathname = page.url.pathname;
+    if (itemUrl === "/") return pathname === "/";
+    return pathname === itemUrl || pathname.startsWith(itemUrl + "/");
+  }
 </script>
 
 <Sidebar.Group>
@@ -20,7 +27,10 @@
     <Sidebar.Menu>
       {#each navMain as item (item.title)}
         <Sidebar.MenuItem>
-          <Sidebar.MenuButton tooltipContent={item.title}>
+          <Sidebar.MenuButton
+            tooltipContent={item.title}
+            isActive={isActive(item.url)}
+          >
             {#snippet child({ props })}
               <a href={item.url} {...props}>
                 {#if item.icon}

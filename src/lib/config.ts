@@ -11,6 +11,7 @@ import {
   IconTruck,
   IconUsers,
   IconAdjustments,
+  IconCoin,
 } from "@tabler/icons-svelte";
 
 export const siteConfig = {
@@ -31,14 +32,14 @@ export const socialLinks: SocialLink[] = [
 
 export const navMain = [
   {
-    title: "Packs",
-    url: "/packs",
-    icon: IconPackages,
-  },
-  {
     title: "Dashboard",
     url: "/dashboard",
     icon: IconDashboard,
+  },
+  {
+    title: "Packs",
+    url: "/packs",
+    icon: IconPackages,
   },
 
   {
@@ -50,6 +51,11 @@ export const navMain = [
     title: "Wallet",
     url: "/wallet",
     icon: IconWallet,
+  },
+  {
+    title: "Buy Rips",
+    url: "/buy",
+    icon: IconCoin,
   },
   {
     title: "Shipments",

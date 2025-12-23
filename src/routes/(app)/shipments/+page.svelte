@@ -1,51 +1,22 @@
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button";
-  import * as Card from "$lib/components/ui/card";
-  import { Badge } from "$lib/components/ui/badge";
-  import * as Select from "$lib/components/ui/select/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton";
+  import * as Tabs from "$lib/components/ui/tabs/index.js";
   import * as Empty from "$lib/components/ui/empty/index.js";
+  import { Skeleton } from "$lib/components/ui/skeleton";
+  import { Button } from "$lib/components/ui/button";
+  import { IconBox, IconTrophy } from "@tabler/icons-svelte";
   import {
-    IconTruck,
-    IconPackage,
-    IconTrophy,
-    IconExternalLink,
-    IconFilter,
-    IconClipboardCheck,
-    IconLoader,
-    IconCircleCheck,
-    IconBox,
-  } from "@tabler/icons-svelte";
+    ShipmentsHeader,
+    ShipmentCard,
+    type Shipment,
+  } from "$lib/components/shipments";
 
   // State
   let isLoading = $state(true);
-  let statusFilter = $state<string>("all");
-
-  // Status configuration
-  const statusConfig: Record<
-    string,
-    { label: string; icon: typeof IconTruck }
-  > = {
-    pending: {
-      label: "Pending",
-      icon: IconLoader,
-    },
-    processing: {
-      label: "Processing",
-      icon: IconClipboardCheck,
-    },
-    shipped: {
-      label: "Shipped",
-      icon: IconTruck,
-    },
-    delivered: {
-      label: "Delivered",
-      icon: IconCircleCheck,
-    },
-  };
+  let selectedYear = $state("2025");
+  let activeTab = $state("all");
 
   // Mock shipments data
-  const allShipments = $state([
+  const allShipments = $state<Shipment[]>([
     {
       id: "SHP-2024-001",
       cardName: "Charizard VMAX",
@@ -56,6 +27,7 @@
       trackingNumber: "1Z999AA10123456784",
       carrier: "UPS",
       estimatedDelivery: "Dec 23, 2025",
+      shippingAddress: "280 Suzanne Throughway, New York, NY 10001, US",
     },
     {
       id: "SHP-2024-002",
@@ -67,6 +39,7 @@
       trackingNumber: null,
       carrier: null,
       estimatedDelivery: null,
+      shippingAddress: "280 Suzanne Throughway, New York, NY 10001, US",
     },
     {
       id: "SHP-2024-003",
@@ -78,6 +51,7 @@
       trackingNumber: null,
       carrier: null,
       estimatedDelivery: null,
+      shippingAddress: "280 Suzanne Throughway, New York, NY 10001, US",
     },
     {
       id: "SHP-2024-004",
@@ -89,6 +63,8 @@
       trackingNumber: "1Z999AA10123456780",
       carrier: "UPS",
       estimatedDelivery: "Dec 12, 2025",
+      deliveredDate: "Dec 12, 2025",
+      shippingAddress: "280 Suzanne Throughway, New York, NY 10001, US",
     },
     {
       id: "SHP-2024-005",
@@ -100,14 +76,28 @@
       trackingNumber: "9400111899223033034400",
       carrier: "USPS",
       estimatedDelivery: "Dec 8, 2025",
+      deliveredDate: "Dec 8, 2025",
+      shippingAddress: "280 Suzanne Throughway, New York, NY 10001, US",
     },
   ]);
 
-  // Filtered shipments
-  const filteredShipments = $derived(
-    statusFilter === "all"
-      ? allShipments
-      : allShipments.filter((s) => s.status === statusFilter)
+  // Filtered shipments based on tab
+  const filteredShipments = $derived(() => {
+    switch (activeTab) {
+      case "in-progress":
+        return allShipments.filter((s) => s.status !== "delivered");
+      case "delivered":
+        return allShipments.filter((s) => s.status === "delivered");
+      default:
+        return allShipments;
+    }
+  });
+
+  const inProgressCount = $derived(
+    allShipments.filter((s) => s.status !== "delivered").length
+  );
+  const deliveredCount = $derived(
+    allShipments.filter((s) => s.status === "delivered").length
   );
 
   // Simulate loading
@@ -117,209 +107,195 @@
     }, 700);
     return () => clearTimeout(timer);
   });
-
-  function getTrackingUrl(carrier: string | null, trackingNumber: string | null): string | null {
-    if (!carrier || !trackingNumber) return null;
-
-    const urls: Record<string, string> = {
-      UPS: `https://www.ups.com/track?tracknum=${trackingNumber}`,
-      USPS: `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber}`,
-      FedEx: `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`,
-    };
-
-    return urls[carrier] || null;
-  }
 </script>
 
-<div class="space-y-6 max-w-4xl">
-  <!-- Filter -->
-  <div class="flex items-center gap-2">
-    <IconFilter size={18} class="text-muted-foreground" />
-    <Select.Root
-      type="single"
-      value={statusFilter}
-      onValueChange={(v) => (statusFilter = v ?? "all")}
-    >
-      <Select.Trigger class="w-[160px]">
-        {statusFilter === "all"
-          ? "All Statuses"
-          : statusConfig[statusFilter]?.label || statusFilter}
-      </Select.Trigger>
-      <Select.Content>
-        <Select.Item value="all">All Statuses</Select.Item>
-        <Select.Item value="pending">Pending</Select.Item>
-        <Select.Item value="processing">Processing</Select.Item>
-        <Select.Item value="shipped">Shipped</Select.Item>
-        <Select.Item value="delivered">Delivered</Select.Item>
-      </Select.Content>
-    </Select.Root>
-  </div>
-
-  <!-- Stats Summary -->
-  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-    {#each Object.entries(statusConfig) as [status, config]}
-      {@const count = allShipments.filter((s) => s.status === status).length}
-      <Card.Root
-        class="cursor-pointer transition-all hover:shadow-md {statusFilter === status ? 'ring-2 ring-primary' : ''}"
-        onclick={() => (statusFilter = statusFilter === status ? "all" : status)}
-      >
-        <Card.Content class="p-4 flex items-center gap-3">
-          <div class="p-2 rounded-full bg-muted">
-            <config.icon size={18} class="text-foreground" />
-          </div>
-          <div>
-            <p class="text-2xl font-bold">{count}</p>
-            <p class="text-xs text-muted-foreground">{config.label}</p>
-          </div>
-        </Card.Content>
-      </Card.Root>
-    {/each}
-  </div>
-
-  <!-- Shipments List -->
-  {#if isLoading}
-    <div class="space-y-4">
-      {#each Array(3) as _}
-        <Card.Root>
-          <Card.Content class="p-6">
-            <div class="flex gap-4">
-              <Skeleton class="h-20 w-20 rounded-lg" />
-              <div class="flex-1 space-y-3">
-                <Skeleton class="h-5 w-48" />
-                <Skeleton class="h-4 w-32" />
-                <Skeleton class="h-4 w-64" />
-              </div>
-            </div>
-          </Card.Content>
-        </Card.Root>
-      {/each}
-    </div>
-  {:else if filteredShipments.length === 0}
-    <Empty.Root class="py-16 border rounded-xl">
-      <Empty.Header>
-        <Empty.Media variant="icon" class="size-16 rounded-full">
-          <IconBox size={32} />
-        </Empty.Media>
-        <Empty.Title>No Shipments Found</Empty.Title>
-        <Empty.Description>
-          {#if statusFilter !== "all"}
-            No shipments with "{statusConfig[statusFilter]?.label}" status.
-            Try selecting a different filter.
-          {:else}
-            You haven't requested any card shipments yet.
-            Pull some valuable cards and request shipping from your inventory!
+<div class="lg:pt-4 space-y-5">
+  <!-- Tabs -->
+  <Tabs.Root bind:value={activeTab} class="w-full">
+    <div class="border-b border-border -mx-2">
+      <Tabs.List class="bg-transparent h-auto p-0 gap-1">
+        <Tabs.Trigger
+          value="all"
+          class="relative px-3 py-2 mb-0 rounded-lg border-0 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none hover:bg-muted data-[state=active]:text-foreground text-muted-foreground data-[state=active]:after:absolute data-[state=active]:after:-bottom-px data-[state=active]:after:inset-x-3 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-foreground"
+        >
+          All shipments
+        </Tabs.Trigger>
+        <Tabs.Trigger
+          value="in-progress"
+          class="relative px-3 py-2 mb-0 rounded-lg border-0 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none hover:bg-muted data-[state=active]:text-foreground text-muted-foreground data-[state=active]:after:absolute data-[state=active]:after:-bottom-px data-[state=active]:after:inset-x-3 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-foreground"
+        >
+          In progress
+          {#if inProgressCount > 0}
+            <span class="ml-1 text-xs text-muted-foreground"
+              >({inProgressCount})</span
+            >
           {/if}
-        </Empty.Description>
-      </Empty.Header>
-      <Empty.Content>
-        <div class="flex gap-3">
-          {#if statusFilter !== "all"}
-            <Button variant="outline" onclick={() => (statusFilter = "all")}>
-              Clear Filter
-            </Button>
+        </Tabs.Trigger>
+        <Tabs.Trigger
+          value="delivered"
+          class="relative px-3 py-2 mb-0 rounded-lg border-0 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none hover:bg-muted data-[state=active]:text-foreground text-muted-foreground data-[state=active]:after:absolute data-[state=active]:after:-bottom-px data-[state=active]:after:inset-x-3 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-foreground"
+        >
+          Delivered
+          {#if deliveredCount > 0}
+            <span class="ml-1 text-xs text-muted-foreground"
+              >({deliveredCount})</span
+            >
           {/if}
-          <Button href="/inventory">
-            <IconTrophy size={18} class="mr-2" />
-            View Inventory
-          </Button>
-        </div>
-      </Empty.Content>
-    </Empty.Root>
-  {:else}
-    <div class="space-y-4">
-      {#each filteredShipments as shipment (shipment.id)}
-        {@const config = statusConfig[shipment.status]}
-        {@const trackingUrl = getTrackingUrl(shipment.carrier, shipment.trackingNumber)}
-
-        <Card.Root class="overflow-hidden transition-all hover:shadow-md">
-          <Card.Content class="p-6">
-            <div class="flex flex-col sm:flex-row gap-4">
-              <!-- Card Preview -->
-              <div class="w-full sm:w-24 h-24 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                <IconTrophy size={40} class="text-muted-foreground" />
-              </div>
-
-              <!-- Details -->
-              <div class="flex-1 min-w-0">
-                <div class="flex flex-wrap items-start gap-2 mb-2">
-                  <h3 class="font-semibold text-lg">{shipment.cardName}</h3>
-                  <Badge variant="secondary">
-                    {shipment.cardTier}
-                  </Badge>
-                  <Badge variant="outline">
-                    <config.icon size={14} class="mr-1" />
-                    {config.label}
-                  </Badge>
-                </div>
-
-                <div class="grid sm:grid-cols-2 gap-x-8 gap-y-1 text-sm">
-                  <div class="flex justify-between sm:block">
-                    <span class="text-muted-foreground">Value:</span>
-                    <span class="font-medium">{shipment.cardValue}</span>
-                  </div>
-                  <div class="flex justify-between sm:block">
-                    <span class="text-muted-foreground">Requested:</span>
-                    <span class="font-medium">{shipment.requestDate}</span>
-                  </div>
-
-                  {#if shipment.trackingNumber}
-                    <div class="flex justify-between sm:block">
-                      <span class="text-muted-foreground">Carrier:</span>
-                      <span class="font-medium">{shipment.carrier}</span>
-                    </div>
-                    <div class="flex justify-between sm:block">
-                      <span class="text-muted-foreground">Est. Delivery:</span>
-                      <span class="font-medium">{shipment.estimatedDelivery}</span>
-                    </div>
-                  {/if}
-                </div>
-
-                {#if shipment.trackingNumber}
-                  <div class="mt-4 flex flex-col sm:flex-row gap-2">
-                    <div class="flex-1 p-2 bg-muted rounded-md font-mono text-sm truncate">
-                      {shipment.trackingNumber}
-                    </div>
-                    {#if trackingUrl}
-                      <Button variant="outline" size="sm" href={trackingUrl} target="_blank">
-                        <IconExternalLink size={16} class="mr-1" />
-                        Track
-                      </Button>
-                    {/if}
-                  </div>
-                {/if}
-              </div>
-            </div>
-          </Card.Content>
-        </Card.Root>
-      {/each}
+        </Tabs.Trigger>
+      </Tabs.List>
     </div>
-  {/if}
 
-  <!-- Info Card -->
-  <Card.Root class="bg-muted/50">
-    <Card.Header>
-      <Card.Title class="flex items-center gap-2 text-base">
-        <IconPackage size={18} />
-        About Shipments
-      </Card.Title>
-    </Card.Header>
-    <Card.Content class="text-sm text-muted-foreground space-y-2">
-      <p>
-        <strong class="text-foreground">Pending:</strong> Your shipment request has been received and is
-        awaiting processing.
-      </p>
-      <p>
-        <strong class="text-foreground">Processing:</strong> We're preparing your card for shipment.
-        This typically takes 1-3 business days.
-      </p>
-      <p>
-        <strong class="text-foreground">Shipped:</strong> Your card is on its way! Use the tracking
-        number to monitor delivery progress.
-      </p>
-      <p>
-        <strong class="text-foreground">Delivered:</strong> Your card has been delivered. Enjoy your
-        pull!
-      </p>
-    </Card.Content>
-  </Card.Root>
+    <!-- All Shipments Tab -->
+    <Tabs.Content value="all" class="mt-0">
+      <div class="py-6">
+        {#if isLoading}
+          <div class="space-y-5">
+            {#each Array(2) as _}
+              <div
+                class="p-1.5 space-y-2 bg-muted/50 border border-border rounded-2xl"
+              >
+                <div class="py-3 px-4 sm:px-6">
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-5">
+                    {#each Array(4) as __}
+                      <div>
+                        <Skeleton class="h-3 w-16 mb-2" />
+                        <Skeleton class="h-4 w-24" />
+                      </div>
+                    {/each}
+                  </div>
+                </div>
+                <div class="p-4 sm:p-6 bg-background rounded-xl">
+                  <div class="flex gap-5">
+                    <Skeleton class="h-40 w-24 sm:w-32 rounded-xl" />
+                    <div class="flex-1 space-y-3">
+                      <Skeleton class="h-5 w-48" />
+                      <Skeleton class="h-4 w-32" />
+                      <Skeleton class="h-4 w-64" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {/each}
+          </div>
+        {:else if filteredShipments().length === 0}
+          <Empty.Root class="py-16 border rounded-xl">
+            <Empty.Header>
+              <Empty.Media variant="icon" class="size-16 rounded-full">
+                <IconBox size={32} />
+              </Empty.Media>
+              <Empty.Title>No shipments found</Empty.Title>
+              <Empty.Description>
+                You haven't requested any card shipments yet. Pull some valuable
+                cards and request shipping from your inventory!
+              </Empty.Description>
+            </Empty.Header>
+            <Empty.Content>
+              <Button href="/inventory">
+                <IconTrophy size={18} class="mr-2" />
+                View Inventory
+              </Button>
+            </Empty.Content>
+          </Empty.Root>
+        {:else}
+          <div class="space-y-5 sm:space-y-8">
+            {#each filteredShipments() as shipment (shipment.id)}
+              <ShipmentCard {shipment} />
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </Tabs.Content>
+
+    <!-- In Progress Tab -->
+    <Tabs.Content value="in-progress" class="mt-0">
+      <div class="py-6">
+        {#if isLoading}
+          <div class="space-y-5">
+            {#each Array(2) as _}
+              <div
+                class="p-1.5 space-y-2 bg-muted/50 border border-border rounded-2xl"
+              >
+                <div class="py-3 px-4 sm:px-6">
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-5">
+                    {#each Array(4) as __}
+                      <div>
+                        <Skeleton class="h-3 w-16 mb-2" />
+                        <Skeleton class="h-4 w-24" />
+                      </div>
+                    {/each}
+                  </div>
+                </div>
+                <div class="p-4 sm:p-6 bg-background rounded-xl">
+                  <div class="flex gap-5">
+                    <Skeleton class="h-40 w-24 sm:w-32 rounded-xl" />
+                    <div class="flex-1 space-y-3">
+                      <Skeleton class="h-5 w-48" />
+                      <Skeleton class="h-4 w-32" />
+                      <Skeleton class="h-4 w-64" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {/each}
+          </div>
+        {:else if filteredShipments().length === 0}
+          <p class="text-sm text-muted-foreground">
+            Looking for a shipment? You don't have any in-progress shipments.
+          </p>
+        {:else}
+          <div class="space-y-5 sm:space-y-8">
+            {#each filteredShipments() as shipment (shipment.id)}
+              <ShipmentCard {shipment} />
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </Tabs.Content>
+
+    <!-- Delivered Tab -->
+    <Tabs.Content value="delivered" class="mt-0">
+      <div class="py-6">
+        {#if isLoading}
+          <div class="space-y-5">
+            {#each Array(2) as _}
+              <div
+                class="p-1.5 space-y-2 bg-muted/50 border border-border rounded-2xl"
+              >
+                <div class="py-3 px-4 sm:px-6">
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-5">
+                    {#each Array(4) as __}
+                      <div>
+                        <Skeleton class="h-3 w-16 mb-2" />
+                        <Skeleton class="h-4 w-24" />
+                      </div>
+                    {/each}
+                  </div>
+                </div>
+                <div class="p-4 sm:p-6 bg-background rounded-xl">
+                  <div class="flex gap-5">
+                    <Skeleton class="h-40 w-24 sm:w-32 rounded-xl" />
+                    <div class="flex-1 space-y-3">
+                      <Skeleton class="h-5 w-48" />
+                      <Skeleton class="h-4 w-32" />
+                      <Skeleton class="h-4 w-64" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {/each}
+          </div>
+        {:else if filteredShipments().length === 0}
+          <p class="text-sm text-muted-foreground">
+            Looking for a shipment? You don't have any delivered shipments.
+          </p>
+        {:else}
+          <div class="space-y-5 sm:space-y-8">
+            {#each filteredShipments() as shipment (shipment.id)}
+              <ShipmentCard {shipment} />
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </Tabs.Content>
+  </Tabs.Root>
 </div>

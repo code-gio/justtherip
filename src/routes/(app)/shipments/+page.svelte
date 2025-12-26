@@ -5,7 +5,6 @@
   import { Button } from "$lib/components/ui/button";
   import { IconBox, IconTrophy } from "@tabler/icons-svelte";
   import {
-    ShipmentsHeader,
     ShipmentCard,
     type Shipment,
   } from "$lib/components/shipments";

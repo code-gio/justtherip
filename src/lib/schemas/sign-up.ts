@@ -25,7 +25,16 @@ export const signUpSchema = z.object({
       /^[a-zA-Z0-9_-]+$/,
       "Username can only contain letters, numbers, underscores, and hyphens"
     )
-    .transform((username) => username.toLowerCase().trim()),
+    .transform((username) => username.toLowerCase().trim())
+    .refine((username) => username.length >= 3, {
+      message: "Username must be at least 3 characters after trimming",
+    })
+    .refine((username) => /^[a-zA-Z0-9_-]+$/.test(username), {
+      message: "Username can only contain letters, numbers, underscores, and hyphens",
+    })
+    .refine((username) => /^[a-zA-Z]/.test(username), {
+      message: "Username must start with a letter",
+    }),
   email: z
     .string()
     .email("Invalid email address")

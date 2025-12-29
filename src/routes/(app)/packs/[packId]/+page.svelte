@@ -129,21 +129,38 @@
                 class="w-full h-full rounded-[22px] bg-card flex flex-col items-center justify-center p-8 text-center"
               >
                 <div
-                  class="text-6xl sm:text-7xl font-black mb-4 bg-gradient-to-br {getTierGradient(
+                  class="px-3 py-1 rounded-full text-xs font-bold mb-4 bg-primary/10 text-primary border border-primary/20"
+                >
+                  {pulledCard.tier_name}
+                </div>
+
+                {#if pulledCard.card_image_url}
+                  <img
+                    src={pulledCard.card_image_url}
+                    alt={pulledCard.card_name || "Card"}
+                    class="w-32 h-44 object-contain mb-4 rounded-lg"
+                    loading="eager"
+                  />
+                {/if}
+
+                <div
+                  class="text-5xl sm:text-6xl font-black mb-4 bg-gradient-to-br {getTierGradient(
                     pulledCard.tier_name
                   )} bg-clip-text text-transparent"
                 >
                   ${((pulledCard.value_cents || 0) / 100).toFixed(2)}
                 </div>
 
-                {#if pulledCard.card_name}
-                  <p class="text-xl font-semibold mb-2">
-                    {pulledCard.card_name}
-                  </p>
-                {/if}
+                <p class="text-xl font-semibold mb-2">
+                  {pulledCard.card_name || `${pulledCard.tier_name} Card`}
+                </p>
 
                 {#if pulledCard.set_name}
-                  <p class="text-muted-foreground">{pulledCard.set_name}</p>
+                  <p class="text-muted-foreground text-sm">{pulledCard.set_name}</p>
+                {/if}
+
+                {#if pulledCard.rarity}
+                  <p class="text-xs text-muted-foreground mt-2">{pulledCard.rarity}</p>
                 {/if}
               </div>
             </div>

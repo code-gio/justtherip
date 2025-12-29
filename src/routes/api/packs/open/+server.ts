@@ -1,5 +1,6 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
+import { randomUUID } from "crypto";
 import { spendRips, getUserRipBalance } from "$lib/server/rips";
 import { drawCard } from "$lib/server/card-draw";
 import { adminClient } from "$lib/server/rips";
@@ -26,13 +27,31 @@ export const POST: RequestHandler = async ({ locals, request }) => {
       return json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get pack_id from request body (optional - for future multi-pack support)
+    // Get pack_id from request body
     const body = await request.json();
-    const packId = body.pack_id || "default_pack";
+    const packId = body.pack_id;
 
-    // TODO: Fetch pack details from database
-    // For now, we assume all packs cost 1 Rip
-    const packCostRips = 1;
+    if (!packId) {
+      return json({ error: "pack_id is required" }, { status: 400 });
+    }
+
+    // Fetch pack details from database
+    const { data: pack, error: packFetchError } = await adminClient
+      .from("packs")
+      .select("id, rip_cost, game_code, is_active")
+      .eq("id", packId)
+      .single();
+
+    if (packFetchError || !pack) {
+      return json({ error: "Pack not found" }, { status: 404 });
+    }
+
+    if (!pack.is_active) {
+      return json({ error: "Pack is not active" }, { status: 400 });
+    }
+
+    const packCostRips = pack.rip_cost;
+    const gameCode = pack.game_code || "mtg";
 
     // Check user has sufficient balance
     const currentBalance = await getUserRipBalance(user.id);
@@ -87,16 +106,39 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
     const card = drawResult.card;
 
+    // NOTE: The current drawCard() uses generic tier system and doesn't return card_uuid.
+    // This is a temporary placeholder until pack-specific card system is implemented.
+    // For now, we generate a placeholder UUID. The proper solution is to implement
+    // drawCardFromPack() that uses pack_cards table.
+    const placeholderCardUuid = randomUUID();
+
+    // Extract image URL if available
+    let cardImageUrl: string | null = null;
+    if (card.card_image_url) {
+      cardImageUrl = card.card_image_url;
+    }
+
+    // Prepare card data for pack_openings.cards_pulled JSONB
+    const cardData = {
+      card_uuid: placeholderCardUuid,
+      tier_id: card.tier_id,
+      tier_name: card.tier_name,
+      value_cents: card.value_cents,
+      card_name: card.card_name || "Unknown Card",
+      card_image_url: cardImageUrl,
+      set_name: card.set_name || null,
+      rarity: card.rarity || null,
+    };
+
     // Record pack opening
     const { data: packOpening, error: packError } = await adminClient
       .from("pack_openings")
       .insert({
         user_id: user.id,
         pack_id: packId,
-        tier_id: card.tier_id,
-        tier_name: card.tier_name,
-        card_value_cents: card.value_cents,
         rips_spent: packCostRips,
+        cards_pulled: [cardData], // JSONB array
+        total_value_cents: card.value_cents,
       })
       .select()
       .single();
@@ -106,19 +148,24 @@ export const POST: RequestHandler = async ({ locals, request }) => {
       // Don't fail the request - user already got the card
     }
 
-    // Add card to user's inventory
+    // Add card to user's inventory with all required fields
     const { data: inventoryItem, error: inventoryError } = await adminClient
       .from("user_inventory")
       .insert({
         user_id: user.id,
         pack_opening_id: packOpening?.id,
+        card_uuid: placeholderCardUuid, // Required field
+        game_code: gameCode, // Required field
+        card_name: card.card_name || "Unknown Card",
+        card_image_url: cardImageUrl,
+        card_value_cents: card.value_cents,
         tier_id: card.tier_id,
         tier_name: card.tier_name,
-        card_value_cents: card.value_cents,
-        card_name: card.card_name,
-        card_image_url: card.card_image_url,
-        set_name: card.set_name,
-        rarity: card.rarity,
+        set_name: card.set_name || null,
+        set_code: null, // Generic system doesn't provide set_code
+        rarity: card.rarity || null,
+        is_foil: false, // Generic system doesn't track this
+        condition: "NM", // Default condition
       })
       .select()
       .single();
@@ -134,6 +181,9 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     }
 
     // Return success with card details
+    // Ensure card_name is always present (use tier name as fallback if card_name is missing)
+    const cardName = card.card_name || `${card.tier_name} Card` || "Unknown Card";
+    
     return json({
       success: true,
       card: {
@@ -141,10 +191,10 @@ export const POST: RequestHandler = async ({ locals, request }) => {
         tier_name: card.tier_name,
         value_cents: card.value_cents,
         value_usd: (card.value_cents / 100).toFixed(2),
-        card_name: card.card_name,
-        card_image_url: card.card_image_url,
-        set_name: card.set_name,
-        rarity: card.rarity,
+        card_name: cardName,
+        card_image_url: cardImageUrl || inventoryItem.card_image_url || null,
+        set_name: card.set_name || null,
+        rarity: card.rarity || null,
       },
       new_balance: spendResult.balance,
       pack_opening_id: packOpening?.id,

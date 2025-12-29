@@ -1,7 +1,20 @@
-export { default as PacksHero } from "./packs-hero.svelte";
-export { default as PacksFilter } from "./packs-filter.svelte";
-export { default as PackCard } from "./pack-card.svelte";
-export { default as PacksGrid } from "./packs-grid.svelte";
-export { default as PacksStats } from "./packs-stats.svelte";
-export * from "./types";
+// Card components
+export { PackCard } from "./card";
 
+// Grid components
+export { PacksGrid } from "./grid";
+
+// Filter components
+export { PacksFilter } from "./filter";
+
+// Hero components
+export { PacksHero } from "./hero";
+
+// Stats components
+export { PacksStats } from "./stats";
+
+// Opening animation
+export { PackOpeningAnimation } from "./opening";
+
+// Types
+export * from "./types";

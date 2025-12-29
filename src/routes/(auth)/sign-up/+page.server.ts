@@ -40,6 +40,34 @@ export const actions: Actions = {
 
     const { email, password, firstName, lastName, username } = form.data;
 
+    // Validate username after transformation (already lowercased and trimmed by schema)
+    if (!username || username.length < 3 || username.length > 30) {
+      return setError(
+        form,
+        "username",
+        "Username must be between 3 and 30 characters"
+      );
+    }
+
+    // Ensure username matches database constraint pattern
+    // Database constraint likely requires: alphanumeric, underscore, hyphen, and possibly must start with letter
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      return setError(
+        form,
+        "username",
+        "Username can only contain letters, numbers, underscores, and hyphens"
+      );
+    }
+
+    // Many database constraints require username to start with a letter
+    if (!/^[a-zA-Z]/.test(username)) {
+      return setError(
+        form,
+        "username",
+        "Username must start with a letter"
+      );
+    }
+
     try {
       // Check if session exists
       const session = await safeGetSession();
@@ -98,8 +126,22 @@ export const actions: Actions = {
 
       if (profileError) {
         console.error("Profile creation error:", profileError);
-        // Don't fail the signup if profile creation fails - user can update it later
-        // But log it for debugging
+        
+        // Check if it's a username constraint violation
+        if (profileError.message?.includes("profiles_username_check1") || 
+            profileError.message?.includes("username")) {
+          return setError(
+            form,
+            "username",
+            "Username is invalid. Please choose a different username."
+          );
+        }
+        
+        // For other profile errors, still fail but with a generic message
+        return fail(500, {
+          form,
+          message: "Account created but profile setup failed. Please try updating your profile later.",
+        });
       }
 
       return {

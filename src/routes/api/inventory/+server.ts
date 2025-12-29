@@ -34,8 +34,8 @@ export const GET: RequestHandler = async ({ locals, url }) => {
       .from("user_inventory")
       .select("*", { count: "exact" })
       .eq("user_id", user.id)
-      .eq("sold", false)
-      .order("obtained_at", { ascending: false });
+      .eq("is_sold", false)
+      .order("created_at", { ascending: false });
 
     if (tierFilter) {
       query = query.eq("tier_name", tierFilter);

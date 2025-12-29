@@ -136,7 +136,7 @@
 
   <!-- Cards Grid -->
   {#if loading}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div class="grid grid-cols-5 gap-4">
       {#each Array(8) as _}
         <Card.Root>
           <Card.Header>
@@ -172,7 +172,7 @@
       </Empty.Content>
     </Empty.Root>
   {:else}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div class="grid grid-cols-5 gap-4">
       {#each cards as card (card.id)}
         {@const isSelling = sellingCardId === card.id}
         {@const sellbackRips = (card.card_value_cents * 0.85 / 100).toFixed(2)}
@@ -184,9 +184,17 @@
             </Badge>
 
             <div class="mb-4">
-              <div class="w-full aspect-square rounded-lg bg-muted flex items-center justify-center">
-                <IconTrophy size={64} class="text-muted-foreground" />
-              </div>
+              {#if card.card_image_url}
+                <img
+                  src={card.card_image_url}
+                  alt={card.card_name || "Card"}
+                  class="w-full aspect-square rounded-lg object-cover"
+                />
+              {:else}
+                <div class="w-full aspect-square rounded-lg bg-muted flex items-center justify-center">
+                  <IconTrophy size={64} class="text-muted-foreground" />
+                </div>
+              {/if}
             </div>
 
             <Card.Title class="text-lg">
@@ -200,7 +208,7 @@
             {/if}
 
             <p class="text-xs text-muted-foreground mt-2">
-              Pulled {new Date(card.obtained_at).toLocaleDateString()}
+              Pulled {new Date(card.created_at).toLocaleDateString()}
             </p>
           </Card.Header>
 

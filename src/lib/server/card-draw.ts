@@ -83,17 +83,25 @@ async function hasReachedDailyUltraChaseLimit(
 
   const { data, error } = await adminClient
     .from("pack_openings")
-    .select("id")
+    .select("cards_pulled")
     .eq("user_id", userId)
-    .eq("tier_name", "Ultra Chase")
-    .gte("opened_at", today.toISOString());
+    .gte("created_at", today.toISOString());
 
   if (error) {
     console.error("Error checking ultra-chase limit:", error);
     return false;
   }
 
-  return (data?.length || 0) >= dailyLimit;
+  // Count Ultra Chase cards from cards_pulled JSONB array
+  const ultraChaseCount = (data || []).reduce((count, opening) => {
+    const cards = opening.cards_pulled || [];
+    const ultraChaseCards = cards.filter(
+      (card: any) => card.tier_name === "Ultra Chase"
+    );
+    return count + ultraChaseCards.length;
+  }, 0);
+
+  return ultraChaseCount >= dailyLimit;
 }
 
 /**

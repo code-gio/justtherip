@@ -1,6 +1,6 @@
 <script lang="ts">
   import { IconPackage } from "@tabler/icons-svelte";
-  import PackCard from "./pack-card.svelte";
+  import { PackCard } from "../card";
   import type { Pack } from "./types";
 
   let {

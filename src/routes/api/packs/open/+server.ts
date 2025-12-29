@@ -1,6 +1,5 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { randomUUID } from "crypto";
 import { spendRips, getUserRipBalance } from "$lib/server/rips";
 import { drawCard } from "$lib/server/card-draw";
 import { adminClient } from "$lib/server/rips";
@@ -110,7 +109,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     // This is a temporary placeholder until pack-specific card system is implemented.
     // For now, we generate a placeholder UUID. The proper solution is to implement
     // drawCardFromPack() that uses pack_cards table.
-    const placeholderCardUuid = randomUUID();
+    const placeholderCardUuid = crypto.randomUUID();
 
     // Extract image URL if available
     let cardImageUrl: string | null = null;

@@ -12,7 +12,8 @@ export interface Pack {
   set: string;
   price: number;
   ev: number;
-  image: string;
+  image: string | null;
+  description?: string | null;
   gradient: string;
   icon: any;
   featured: boolean;

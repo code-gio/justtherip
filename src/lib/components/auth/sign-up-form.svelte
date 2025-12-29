@@ -14,8 +14,6 @@
   import {
     IconEye,
     IconEyeOff,
-    IconCircleCheck,
-    IconCircleX,
   } from "@tabler/icons-svelte";
   import { toast } from "svelte-sonner";
   import { goto } from "$app/navigation";
@@ -26,84 +24,33 @@
   let isSubmitting = $state(false);
   let passwordFocused = $state(false);
 
-  // Password requirements and strength calculation
-  const passwordRequirements = [
-    {
-      label: "At least 8 characters",
-      test: (p: string) => p?.length >= 8,
-      weight: 1,
-    },
-    {
-      label: "Contains a number",
-      test: (p: string) => p && /\d/.test(p),
-      weight: 1,
-    },
-    {
-      label: "Contains a special character",
-      test: (p: string) => p && /[!@#$%^&*]/.test(p),
-      weight: 2,
-    },
-    {
-      label: "Contains uppercase letter",
-      test: (p: string) => p && /[A-Z]/.test(p),
-      weight: 1,
-    },
-    {
-      label: "Contains lowercase letter",
-      test: (p: string) => p && /[a-z]/.test(p),
-      weight: 1,
-    },
-  ];
-
-  // Additional strength checks
-  const additionalStrengthChecks = [
-    { test: (p: string) => p?.length >= 12, weight: 2 }, // Bonus for longer passwords
-    { test: (p: string) => p && /^(?!.*(.)\1{2,}).*$/.test(p), weight: 1 }, // No repeating characters
-    { test: (p: string) => p && /[!@#$%^&*]{2,}/.test(p), weight: 1 }, // Multiple special characters
-    { test: (p: string) => p && /\d{2,}/.test(p), weight: 1 }, // Multiple numbers
-    { test: (p: string) => p && /[A-Z]{2,}/.test(p), weight: 1 }, // Multiple uppercase letters
-  ];
-
+  // Simple password strength calculation
   function calculatePasswordStrength(password: string | undefined): {
     score: number;
     label: string;
     color: string;
   } {
     if (!password) {
-      return { score: 0, label: "Too Weak", color: "bg-gray-200" };
+      return { score: 0, label: "", color: "bg-gray-200" };
     }
 
-    let totalWeight = 0;
+    const length = password.length;
     let score = 0;
 
-    // Calculate basic requirements score
-    for (const req of passwordRequirements) {
-      totalWeight += req.weight;
-      if (req.test(password)) {
-        score += req.weight;
-      }
-    }
-
-    // Add bonus points for additional strength
-    for (const check of additionalStrengthChecks) {
-      totalWeight += check.weight;
-      if (check.test(password)) {
-        score += check.weight;
-      }
-    }
-
-    // Calculate percentage
-    const percentage = (score / totalWeight) * 100;
+    // Simple scoring based on length
+    if (length >= 6) score = 30;
+    if (length >= 8) score = 60;
+    if (length >= 12) score = 100;
 
     // Determine strength label and color
-    if (percentage < 40) {
-      return { score: percentage, label: "Too Weak", color: "bg-red-500" };
-    } else if (percentage < 60) {
-      return { score: percentage, label: "Moderate", color: "bg-yellow-500" };
-    } else if (percentage < 80) {
-      return { score: percentage, label: "Strong", color: "bg-blue-500" };
+    if (score < 30) {
+      return { score: 0, label: "", color: "bg-gray-200" };
+    } else if (score < 60) {
+      return { score: 30, label: "Weak", color: "bg-yellow-500" };
+    } else if (score < 100) {
+      return { score: 60, label: "Good", color: "bg-blue-500" };
     } else {
-      return { score: percentage, label: "Very Strong", color: "bg-green-500" };
+      return { score: 100, label: "Strong", color: "bg-green-500" };
     }
   }
 
@@ -204,6 +151,33 @@
     </Form.Field>
   </div>
 
+  <Form.Field {form} name="username">
+    <Form.Control>
+      {#snippet children({ props })}
+        <Form.Label for="username">Username</Form.Label>
+        <Input
+          {...props}
+          id="username"
+          bind:value={$formData.username}
+          placeholder="johndoe"
+          autocomplete="username"
+          required
+          class="transition-all duration-200"
+          aria-invalid={$errors.username ? "true" : undefined}
+          aria-describedby={$errors.username ? "username-error" : undefined}
+        />
+      {/snippet}
+    </Form.Control>
+    <Form.FieldErrors
+      class="text-sm text-red-500 mt-1"
+      id="username-error"
+      role="alert"
+    />
+    <p class="text-sm text-muted-foreground mt-1">
+      Only letters, numbers, underscores, and hyphens allowed
+    </p>
+  </Form.Field>
+
   <Form.Field {form} name="email">
     <Form.Control>
       {#snippet children({ props })}
@@ -297,26 +271,12 @@
 
     {#if passwordFocused && $formData?.password}
       <div
-        class="mt-2 space-y-2 text-sm"
+        class="mt-2 text-sm text-muted-foreground"
         id="password-requirements"
         role="region"
         aria-label="Password requirements"
       >
-        {#each passwordRequirements as requirement}
-          {@const passes = requirement.test($formData?.password || "")}
-          <div
-            class="flex items-center gap-2"
-            class:text-green-600={passes}
-            class:text-gray-500={!passes}
-          >
-            {#if passes}
-              <IconCircleCheck size={16} />
-            {:else}
-              <IconCircleX size={16} />
-            {/if}
-            {requirement.label}
-          </div>
-        {/each}
+        Password must be at least 6 characters long
       </div>
     {/if}
   </Form.Field>

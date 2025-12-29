@@ -10,7 +10,7 @@ import { adminClient } from "./rips";
 export interface CardTier {
   id: string;
   name: string;
-  probability: number;
+  default_probability: number;
   min_value_cents: number;
   max_value_cents: number;
   color_hex: string;
@@ -41,7 +41,7 @@ export async function getCardTiers(): Promise<CardTier[]> {
     .from("card_tiers")
     .select("*")
     .eq("is_active", true)
-    .order("probability", { ascending: false });
+    .order("default_probability", { ascending: false });
 
   if (error) {
     console.error("Error fetching card tiers:", error);
@@ -102,7 +102,7 @@ async function hasReachedDailyUltraChaseLimit(
 function selectTierByProbability(tiers: CardTier[]): CardTier {
   // Validate probabilities sum to ~1.0
   const totalProbability = tiers.reduce(
-    (sum, tier) => sum + tier.probability,
+    (sum, tier) => sum + tier.default_probability,
     0
   );
 
@@ -116,7 +116,7 @@ function selectTierByProbability(tiers: CardTier[]): CardTier {
   let cumulative = 0;
 
   for (const tier of tiers) {
-    cumulative += tier.probability;
+    cumulative += tier.default_probability;
     if (random <= cumulative) {
       return tier;
     }
@@ -184,11 +184,11 @@ export async function drawCard(userId: string): Promise<DrawResult> {
     // Normalize probabilities if we filtered out Ultra Chase
     if (availableTiers.length < tiers.length) {
       const totalProb = availableTiers.reduce(
-        (sum, t) => sum + t.probability,
+        (sum, t) => sum + t.default_probability,
         0
       );
       availableTiers.forEach((t) => {
-        t.probability = t.probability / totalProb;
+        t.default_probability = t.default_probability / totalProb;
       });
     }
 

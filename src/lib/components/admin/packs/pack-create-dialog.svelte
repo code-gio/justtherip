@@ -1,61 +1,63 @@
 <script lang="ts">
   import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import * as Form from "$lib/components/ui/form/index.js";
   import { Input } from "$lib/components/ui/input";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
+  import { Label } from "$lib/components/ui/label";
   import * as Select from "$lib/components/ui/select/index.js";
   import { Button } from "$lib/components/ui/button";
-  import { Checkbox } from "$lib/components/ui/checkbox";
   import { superForm } from "sveltekit-superforms";
   import { zodClient } from "sveltekit-superforms/adapters";
   import { z } from "zod";
 
+  interface Game {
+    id: string;
+    name: string;
+    code: string;
+  }
+
   let {
     open = $bindable(false),
+    games = [],
     onComplete,
-  }: {
+  } = $props<{
     open?: boolean;
+    games?: Game[];
     onComplete?: (packId: string) => void;
-  } = $props();
+  }>();
+
+  let isLoading = $state(false);
 
   const packSchema = z.object({
-    name: z.string().min(1, "Pack name is required"),
+    name: z.string().min(3, "Pack name must be at least 3 characters"),
     slug: z.string().min(1, "Slug is required").regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
-    description: z.string().optional(),
-    image_url: z.string().url().optional().or(z.literal("")),
-    game: z.enum(["mtg", "pokemon"]),
-    rip_cost: z.number().int().positive("Rip cost must be a positive integer"),
-    is_active: z.boolean(),
-    cards_per_pack: z.number().int().positive().default(1),
+    game_code: z.string().min(1, "Game is required"),
   });
 
   const form = superForm(
     {
       name: "",
       slug: "",
-      description: "",
-      image_url: "",
-      game: "mtg",
-      rip_cost: 1,
-      is_active: false,
-      cards_per_pack: 1,
+      game_code: "",
     },
     {
-      validators: zodClient(packSchema),
       SPA: true,
-      onUpdate: async ({ form }) => {
-        if (form.valid) {
-          // TODO: Submit to API to create pack
-          console.log("Creating pack:", form.data);
+      validators: zodClient(packSchema as any),
+      onSubmit: () => {
+        isLoading = true;
+      },
+      onResult: async ({ result }) => {
+        isLoading = false;
 
-          // Mock pack ID - replace with actual API response
-          const newPackId = "new-pack-id";
-
-          if (onComplete) {
-            onComplete(newPackId);
-          }
-
+        if (result.type === "success" && "data" in result && result.data?.success && result.data?.packId) {
+          // Close modal first
           open = false;
+
+          // Then navigate
+          if (onComplete) {
+            onComplete(result.data.packId);
+          }
+        } else if (result.type === "failure" && "data" in result) {
+          const errorMessage = (result.data as { error?: string })?.error || "Unknown error";
+          console.error("Error creating pack:", errorMessage);
         }
       },
     }
@@ -93,124 +95,82 @@
 </script>
 
 <Dialog.Root bind:open>
-  <Dialog.Content class="max-w-2xl">
+  <Dialog.Content class="max-w-lg">
     <Dialog.Header>
       <Dialog.Title>Create New Pack</Dialog.Title>
       <Dialog.Description>
-        Enter the basic pack information to create a new pack. You'll be able to configure tiers and cards after creation.
+        Start by defining the basic fields. You'll configure tiers, cards, and pricing in the editor.
       </Dialog.Description>
     </Dialog.Header>
 
-    <form method="POST" use:enhance class="space-y-4">
-      <Form.Field {form} name="name">
-        <Form.Control let:attrs>
-          <Form.Label>Pack Name *</Form.Label>
-          <Input
-            {...attrs}
-            bind:value={$formData.name}
-            onblur={handleNameBlur}
-            placeholder="e.g., Standard Pack"
-          />
-        </Form.Control>
-        <Form.FieldErrors />
-      </Form.Field>
-
-      <Form.Field {form} name="slug">
-        <Form.Control let:attrs>
-          <Form.Label>Slug *</Form.Label>
-          <Input
-            {...attrs}
-            bind:value={$formData.slug}
-            oninput={handleSlugChange}
-            placeholder="e.g., standard-pack"
-          />
-        </Form.Control>
-        <Form.Description>
-          URL-friendly identifier (auto-generated from name, editable)
-        </Form.Description>
-        <Form.FieldErrors />
-      </Form.Field>
-
-      <Form.Field {form} name="description">
-        <Form.Control let:attrs>
-          <Form.Label>Description</Form.Label>
-          <Textarea
-            {...attrs}
-            bind:value={$formData.description}
-            rows={3}
-            placeholder="Describe what makes this pack special..."
-          />
-        </Form.Control>
-        <Form.FieldErrors />
-      </Form.Field>
-
-      <Form.Field {form} name="image_url">
-        <Form.Control let:attrs>
-          <Form.Label>Pack Image URL</Form.Label>
-          <Input
-            {...attrs}
-            bind:value={$formData.image_url}
-            type="url"
-            placeholder="https://example.com/pack-image.jpg"
-          />
-        </Form.Control>
-        <Form.FieldErrors />
-      </Form.Field>
-
-      <div class="grid grid-cols-2 gap-4">
-        <Form.Field {form} name="game">
-          <Form.Control let:attrs>
-            <Form.Label>Game *</Form.Label>
-            <Select.Root
-              selected={{ value: $formData.game, label: $formData.game === "mtg" ? "Magic: The Gathering" : "Pokémon" }}
-              onSelectedChange={(v) => {
-                v && ($formData.game = v.value);
-              }}
-            >
-              <Select.Trigger {...attrs}>
-                <Select.Value placeholder="Select game" />
-              </Select.Trigger>
-              <Select.Content>
-                <Select.Item value="mtg">Magic: The Gathering</Select.Item>
-                <Select.Item value="pokemon">Pokémon</Select.Item>
-              </Select.Content>
-            </Select.Root>
-          </Form.Control>
-          <Form.FieldErrors />
-        </Form.Field>
-
-        <Form.Field {form} name="rip_cost">
-          <Form.Control let:attrs>
-            <Form.Label>Rip Cost *</Form.Label>
-            <Input
-              {...attrs}
-              type="number"
-              min="1"
-              step="1"
-              bind:value={$formData.rip_cost}
-            />
-          </Form.Control>
-          <Form.FieldErrors />
-        </Form.Field>
+    <form method="POST" action="?/create" use:enhance class="space-y-4">
+      <div class="space-y-2">
+        <Label for="name">Pack Name *</Label>
+        <Input
+          id="name"
+          name="name"
+          bind:value={$formData.name}
+          onblur={handleNameBlur}
+          placeholder="e.g., Standard Pack"
+          class={$errors.name ? "border-destructive" : ""}
+        />
+        {#if $errors.name}
+          <p class="text-sm text-destructive">{$errors.name}</p>
+        {/if}
       </div>
 
-      <Form.Field {form} name="is_active" class="flex items-center space-x-2">
-        <Form.Control let:attrs>
-          <Checkbox
-            {...attrs}
-            bind:checked={$formData.is_active}
-          />
-          <Form.Label class="font-normal cursor-pointer">
-            Activate pack immediately after creation
-          </Form.Label>
-        </Form.Control>
-      </Form.Field>
+      <div class="space-y-2">
+        <Label for="slug">Slug *</Label>
+        <Input
+          id="slug"
+          name="slug"
+          bind:value={$formData.slug}
+          oninput={handleSlugChange}
+          placeholder="e.g., standard-pack"
+          class={$errors.slug ? "border-destructive" : ""}
+        />
+        <p class="text-xs text-muted-foreground">
+          URL-friendly identifier (auto-generated from name, editable)
+        </p>
+        {#if $errors.slug}
+          <p class="text-sm text-destructive">{$errors.slug}</p>
+        {/if}
+      </div>
+
+      <div class="space-y-2">
+        <Label for="game_code">Game *</Label>
+        {#if games.length > 0}
+          <Select.Root type="single" name="game_code" bind:value={$formData.game_code}>
+            <Select.Trigger id="game_code" class={$errors.game_code ? "border-destructive" : ""}>
+              {#if $formData.game_code}
+                {games.find((g: Game) => g.code === $formData.game_code)?.name || "Select game"}
+              {:else}
+                Select game
+              {/if}
+            </Select.Trigger>
+            <Select.Content>
+              {#each games as game (game.id)}
+                <Select.Item value={game.code}>{game.name}</Select.Item>
+              {/each}
+            </Select.Content>
+          </Select.Root>
+        {:else}
+          <div class="border rounded-md px-3 py-2 text-sm text-muted-foreground">
+            Loading games...
+          </div>
+        {/if}
+        {#if $errors.game_code}
+          <p class="text-sm text-destructive">{$errors.game_code}</p>
+        {/if}
+      </div>
 
       <Dialog.Footer>
         <Button type="button" variant="outline" onclick={() => (open = false)}>
           Cancel
         </Button>
-        <Form.Button>Create Pack</Form.Button>
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? "Creating..." : "Create Pack"}
+        </Button>
       </Dialog.Footer>
     </form>
   </Dialog.Content>

@@ -10,400 +10,54 @@
     IconLoader2,
     IconCoin,
     IconX,
-    IconChevronLeft,
-    IconChevronRight,
-    IconFlame,
     IconTrendingUp,
-    IconDiamond,
-    IconCrown,
-    IconStar,
-    IconBolt,
     IconPackage,
     IconArrowLeft,
   } from "@tabler/icons-svelte";
   import { invalidateAll, goto } from "$app/navigation";
+  import type { PageData } from "./$types";
 
-  let { data } = $props();
-  let { balance } = $derived(data);
+  let { data }: { data: PageData } = $props();
+  let { balance, pack } = $derived(data);
 
-  interface Pack {
-    id: string;
-    name: string;
-    set: string;
-    price: number;
-    ev: number;
-    image: string;
-    gradient: string;
-    description: string;
-    odds: { tier: string; chance: number; color: string; value: string }[];
-    totalOpened: number;
+  // Calculate EV from odds (simplified - would need actual card values for accurate EV)
+  const expectedValue = $derived(() => {
+    if (!pack?.odds || pack.odds.length === 0) return 0;
+    // Simple calculation: average of min/max for each tier weighted by probability
+    return pack.odds.reduce((sum, odd) => {
+      const avgValue = (odd.min_value + odd.max_value) / 2;
+      return sum + (avgValue * odd.chance) / 100;
+    }, 0);
+  });
+
+  // Get default gradient based on game or pack name
+  function getPackGradient(): string {
+    if (pack?.image_url) return "from-blue-500 via-purple-500 to-pink-500";
+    // Default gradient
+    return "from-violet-500 via-fuchsia-500 to-pink-500";
   }
 
-  const PACKS: Record<string, Pack> = {
-    "prismatic-evolutions": {
-      id: "prismatic-evolutions",
-      name: "Prismatic Evolutions",
-      set: "Scarlet & Violet",
-      price: 5,
-      ev: 7.24,
-      image: "🌈",
-      gradient: "from-violet-500 via-fuchsia-500 to-pink-500",
-      description:
-        "The most sought-after modern set featuring stunning prismatic artwork and chase cards.",
-      odds: [
-        {
-          tier: "Common",
-          chance: 45,
-          color: "bg-slate-400",
-          value: "$0.10 - $0.50",
-        },
-        {
-          tier: "Uncommon",
-          chance: 30,
-          color: "bg-emerald-500",
-          value: "$0.50 - $2.00",
-        },
-        {
-          tier: "Rare",
-          chance: 15,
-          color: "bg-blue-500",
-          value: "$2.00 - $10.00",
-        },
-        {
-          tier: "Ultra Rare",
-          chance: 8,
-          color: "bg-purple-500",
-          value: "$10.00 - $50.00",
-        },
-        {
-          tier: "Chase",
-          chance: 2,
-          color: "bg-amber-500",
-          value: "$50.00 - $500.00",
-        },
-      ],
-      totalOpened: 12847,
-    },
-    "surging-sparks": {
-      id: "surging-sparks",
-      name: "Surging Sparks",
-      set: "Scarlet & Violet",
-      price: 3,
-      ev: 4.12,
-      image: "⚡",
-      gradient: "from-amber-400 via-yellow-500 to-orange-500",
-      description:
-        "Electric energy courses through this pack with powerful lightning-themed hits.",
-      odds: [
-        {
-          tier: "Common",
-          chance: 50,
-          color: "bg-slate-400",
-          value: "$0.10 - $0.40",
-        },
-        {
-          tier: "Uncommon",
-          chance: 28,
-          color: "bg-emerald-500",
-          value: "$0.40 - $1.50",
-        },
-        {
-          tier: "Rare",
-          chance: 14,
-          color: "bg-blue-500",
-          value: "$1.50 - $8.00",
-        },
-        {
-          tier: "Ultra Rare",
-          chance: 6,
-          color: "bg-purple-500",
-          value: "$8.00 - $40.00",
-        },
-        {
-          tier: "Chase",
-          chance: 2,
-          color: "bg-amber-500",
-          value: "$40.00 - $300.00",
-        },
-      ],
-      totalOpened: 8432,
-    },
-    "stellar-crown": {
-      id: "stellar-crown",
-      name: "Stellar Crown",
-      set: "Scarlet & Violet",
-      price: 4,
-      ev: 5.5,
-      image: "👑",
-      gradient: "from-indigo-500 via-purple-500 to-pink-500",
-      description:
-        "Royal treatment with majestic artwork and crown-worthy chase cards.",
-      odds: [
-        {
-          tier: "Common",
-          chance: 48,
-          color: "bg-slate-400",
-          value: "$0.10 - $0.45",
-        },
-        {
-          tier: "Uncommon",
-          chance: 29,
-          color: "bg-emerald-500",
-          value: "$0.45 - $1.80",
-        },
-        {
-          tier: "Rare",
-          chance: 14,
-          color: "bg-blue-500",
-          value: "$1.80 - $9.00",
-        },
-        {
-          tier: "Ultra Rare",
-          chance: 7,
-          color: "bg-purple-500",
-          value: "$9.00 - $45.00",
-        },
-        {
-          tier: "Chase",
-          chance: 2,
-          color: "bg-amber-500",
-          value: "$45.00 - $350.00",
-        },
-      ],
-      totalOpened: 6219,
-    },
-    "twilight-masquerade": {
-      id: "twilight-masquerade",
-      name: "Twilight Masquerade",
-      set: "Scarlet & Violet",
-      price: 3,
-      ev: 3.89,
-      image: "🎭",
-      gradient: "from-rose-500 via-purple-600 to-indigo-600",
-      description:
-        "Mystery and elegance combine in this theatrical set of masked wonders.",
-      odds: [
-        {
-          tier: "Common",
-          chance: 52,
-          color: "bg-slate-400",
-          value: "$0.10 - $0.35",
-        },
-        {
-          tier: "Uncommon",
-          chance: 27,
-          color: "bg-emerald-500",
-          value: "$0.35 - $1.30",
-        },
-        {
-          tier: "Rare",
-          chance: 13,
-          color: "bg-blue-500",
-          value: "$1.30 - $7.00",
-        },
-        {
-          tier: "Ultra Rare",
-          chance: 6,
-          color: "bg-purple-500",
-          value: "$7.00 - $35.00",
-        },
-        {
-          tier: "Chase",
-          chance: 2,
-          color: "bg-amber-500",
-          value: "$35.00 - $250.00",
-        },
-      ],
-      totalOpened: 4891,
-    },
-    "temporal-forces": {
-      id: "temporal-forces",
-      name: "Temporal Forces",
-      set: "Scarlet & Violet",
-      price: 4,
-      ev: 5.1,
-      image: "⏳",
-      gradient: "from-cyan-400 via-blue-500 to-indigo-600",
-      description:
-        "Bend time and space with this collection of temporal anomalies and paradoxes.",
-      odds: [
-        {
-          tier: "Common",
-          chance: 49,
-          color: "bg-slate-400",
-          value: "$0.10 - $0.42",
-        },
-        {
-          tier: "Uncommon",
-          chance: 28,
-          color: "bg-emerald-500",
-          value: "$0.42 - $1.70",
-        },
-        {
-          tier: "Rare",
-          chance: 14,
-          color: "bg-blue-500",
-          value: "$1.70 - $8.50",
-        },
-        {
-          tier: "Ultra Rare",
-          chance: 7,
-          color: "bg-purple-500",
-          value: "$8.50 - $42.00",
-        },
-        {
-          tier: "Chase",
-          chance: 2,
-          color: "bg-amber-500",
-          value: "$42.00 - $320.00",
-        },
-      ],
-      totalOpened: 5632,
-    },
-    "paldean-fates": {
-      id: "paldean-fates",
-      name: "Paldean Fates",
-      set: "Scarlet & Violet",
-      price: 6,
-      ev: 8.75,
-      image: "✨",
-      gradient: "from-emerald-400 via-teal-500 to-cyan-500",
-      description:
-        "Destiny awaits in this high-value set packed with shiny treasures from Paldea.",
-      odds: [
-        {
-          tier: "Common",
-          chance: 42,
-          color: "bg-slate-400",
-          value: "$0.15 - $0.60",
-        },
-        {
-          tier: "Uncommon",
-          chance: 30,
-          color: "bg-emerald-500",
-          value: "$0.60 - $2.50",
-        },
-        {
-          tier: "Rare",
-          chance: 16,
-          color: "bg-blue-500",
-          value: "$2.50 - $12.00",
-        },
-        {
-          tier: "Ultra Rare",
-          chance: 9,
-          color: "bg-purple-500",
-          value: "$12.00 - $60.00",
-        },
-        {
-          tier: "Chase",
-          chance: 3,
-          color: "bg-amber-500",
-          value: "$60.00 - $500.00",
-        },
-      ],
-      totalOpened: 15234,
-    },
-    "obsidian-flames": {
-      id: "obsidian-flames",
-      name: "Obsidian Flames",
-      set: "Scarlet & Violet",
-      price: 2,
-      ev: 2.45,
-      image: "🔥",
-      gradient: "from-orange-500 via-red-500 to-rose-600",
-      description:
-        "Fiery passion ignites in this blazing set of volcanic power.",
-      odds: [
-        {
-          tier: "Common",
-          chance: 55,
-          color: "bg-slate-400",
-          value: "$0.08 - $0.30",
-        },
-        {
-          tier: "Uncommon",
-          chance: 26,
-          color: "bg-emerald-500",
-          value: "$0.30 - $1.00",
-        },
-        {
-          tier: "Rare",
-          chance: 12,
-          color: "bg-blue-500",
-          value: "$1.00 - $5.00",
-        },
-        {
-          tier: "Ultra Rare",
-          chance: 5,
-          color: "bg-purple-500",
-          value: "$5.00 - $25.00",
-        },
-        {
-          tier: "Chase",
-          chance: 2,
-          color: "bg-amber-500",
-          value: "$25.00 - $200.00",
-        },
-      ],
-      totalOpened: 9821,
-    },
-    "151": {
-      id: "151",
-      name: "151",
-      set: "Scarlet & Violet",
-      price: 8,
-      ev: 12.5,
-      image: "🎴",
-      gradient: "from-red-500 via-pink-500 to-purple-500",
-      description:
-        "The original 151 return in stunning glory. Chase the legendary Mew!",
-      odds: [
-        {
-          tier: "Common",
-          chance: 40,
-          color: "bg-slate-400",
-          value: "$0.20 - $0.80",
-        },
-        {
-          tier: "Uncommon",
-          chance: 28,
-          color: "bg-emerald-500",
-          value: "$0.80 - $3.00",
-        },
-        {
-          tier: "Rare",
-          chance: 18,
-          color: "bg-blue-500",
-          value: "$3.00 - $15.00",
-        },
-        {
-          tier: "Ultra Rare",
-          chance: 10,
-          color: "bg-purple-500",
-          value: "$15.00 - $75.00",
-        },
-        {
-          tier: "Chase",
-          chance: 4,
-          color: "bg-amber-500",
-          value: "$75.00 - $500.00",
-        },
-      ],
-      totalOpened: 21456,
-    },
-  };
+  // Get tier color based on tier name
+  function getTierColor(tierName: string): string {
+    const colors: Record<string, string> = {
+      Trash: "bg-slate-400",
+      Low: "bg-emerald-500",
+      Mid: "bg-blue-500",
+      High: "bg-purple-500",
+      Chase: "bg-amber-500",
+      "Ultra Chase": "bg-rose-500",
+    };
+    return colors[tierName] || "bg-gray-400";
+  }
 
-  let packId = $derived(page.params.packId);
-  let pack = $derived(PACKS[packId]);
+
 
   let isOpening = $state(false);
   let pulledCard = $state<any>(null);
   let showCardReveal = $state(false);
-  let openCount = $state(1);
 
   async function openPack() {
-    if (!pack || balance < pack.price * openCount) {
+    if (!pack || balance < pack.rip_cost) {
       toast.error("Insufficient Rips! Purchase more from the store.");
       return;
     }
@@ -416,7 +70,7 @@
       const response = await fetch("/api/packs/open", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packId: pack.id, count: openCount }),
+        body: JSON.stringify({ pack_id: pack.id }),
       });
 
       if (!response.ok) {
@@ -432,7 +86,7 @@
       await invalidateAll();
 
       toast.success(
-        `You pulled a ${result.card.tier_name} worth $${result.card.value_usd}!`
+        `You pulled a ${result.card.tier_name} worth $${(result.card.value_cents / 100).toFixed(2)}!`
       );
     } catch (error) {
       console.error("Pack opening error:", error);
@@ -451,13 +105,11 @@
 
   function getTierGradient(tierName: string): string {
     const gradients: Record<string, string> = {
-      Common: "from-slate-400 to-slate-600",
-      Uncommon: "from-emerald-400 to-emerald-600",
-      Rare: "from-blue-400 to-blue-600",
-      "Ultra Rare": "from-purple-400 to-purple-600",
-      Epic: "from-purple-400 to-purple-600",
-      Legendary: "from-amber-400 to-orange-500",
-      Chase: "from-rose-400 via-pink-500 to-purple-600",
+      Trash: "from-slate-400 to-slate-600",
+      Low: "from-emerald-400 to-emerald-600",
+      Mid: "from-blue-400 to-blue-600",
+      High: "from-purple-400 to-purple-600",
+      Chase: "from-amber-400 to-orange-500",
       "Ultra Chase": "from-rose-400 via-pink-500 to-purple-600",
     };
     return gradients[tierName] || "from-gray-400 to-gray-600";
@@ -465,11 +117,12 @@
 
   function getTierTextColor(tier: string): string {
     const colors: Record<string, string> = {
-      Common: "text-slate-400",
-      Uncommon: "text-emerald-500",
-      Rare: "text-blue-500",
-      "Ultra Rare": "text-purple-500",
+      Trash: "text-slate-400",
+      Low: "text-emerald-500",
+      Mid: "text-blue-500",
+      High: "text-purple-500",
       Chase: "text-amber-500",
+      "Ultra Chase": "text-rose-500",
     };
     return colors[tier] || "text-gray-400";
   }
@@ -533,7 +186,7 @@
                     pulledCard.tier_name
                   )} bg-clip-text text-transparent"
                 >
-                  ${pulledCard.value_usd}
+                  ${((pulledCard.value_cents || 0) / 100).toFixed(2)}
                 </div>
 
                 {#if pulledCard.card_name}
@@ -563,7 +216,7 @@
             <Button
               size="lg"
               onclick={openPack}
-              disabled={isOpening || balance < pack.price}
+              disabled={isOpening || balance < pack.rip_cost}
             >
               <IconSparkles size={18} class="mr-2" />
               Open Another
@@ -574,7 +227,6 @@
               onclick={() => goto("/inventory")}
             >
               Inventory
-              <IconChevronRight size={18} class="ml-1" />
             </Button>
           </div>
         </div>
@@ -589,38 +241,42 @@
           <div class="sticky top-24">
             <!-- Glow -->
             <div
-              class="absolute inset-0 bg-gradient-to-r {pack.gradient} rounded-3xl blur-3xl opacity-30"
+              class="absolute inset-0 bg-gradient-to-r {getPackGradient()} rounded-3xl blur-3xl opacity-30"
             ></div>
 
             <!-- Pack Card -->
             <div
-              class="relative aspect-[3/4] max-w-md mx-auto rounded-3xl bg-gradient-to-br {pack.gradient} overflow-hidden shadow-2xl"
+              class="relative aspect-[3/4] max-w-md mx-auto rounded-3xl bg-gradient-to-br {getPackGradient()} overflow-hidden shadow-2xl"
             >
-              <!-- Pattern -->
-              <div class="absolute inset-0 opacity-20">
-                <div
-                  class="absolute inset-0"
-                  style="background-image: radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 50%, white 1px, transparent 1px); background-size: 40px 40px;"
-                ></div>
-              </div>
+              {#if pack.image_url}
+                <img
+                  src={pack.image_url}
+                  alt={pack.name}
+                  class="w-full h-full object-cover"
+                />
+                <div class="absolute inset-0 bg-black/40"></div>
+              {:else}
+                <!-- Pattern -->
+                <div class="absolute inset-0 opacity-20">
+                  <div
+                    class="absolute inset-0"
+                    style="background-image: radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 50%, white 1px, transparent 1px); background-size: 40px 40px;"
+                  ></div>
+                </div>
+              {/if}
 
               <!-- Content -->
               <div
                 class="absolute inset-0 flex flex-col items-center justify-center p-8"
               >
-                <span
-                  class="text-9xl mb-6 drop-shadow-2xl {isOpening
-                    ? 'animate-bounce'
-                    : ''}"
-                >
-                  {pack.image}
-                </span>
                 <h2
                   class="text-3xl font-black text-white text-center mb-2 drop-shadow-lg"
                 >
                   {pack.name}
                 </h2>
-                <p class="text-white/70 text-center">{pack.set}</p>
+                {#if pack.game_code}
+                  <p class="text-white/70 text-center uppercase">{pack.game_code}</p>
+                {/if}
               </div>
 
               <!-- Opening Overlay -->
@@ -649,76 +305,88 @@
           <!-- Header -->
           <div>
             <div class="flex items-center gap-3 mb-3">
-              <Badge variant="secondary">{pack.set}</Badge>
-              <Badge
-                variant="outline"
-                class="text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
-              >
-                <IconTrendingUp size={14} class="mr-1" />
-                EV ${pack.ev.toFixed(2)}
-              </Badge>
+              {#if pack.game_code}
+                <Badge variant="secondary" class="uppercase">{pack.game_code}</Badge>
+              {/if}
+              {#if expectedValue() > 0}
+                <Badge
+                  variant="outline"
+                  class="text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
+                >
+                  <IconTrendingUp size={14} class="mr-1" />
+                  EV ${expectedValue().toFixed(2)}
+                </Badge>
+              {/if}
             </div>
             <h1 class="text-4xl font-black mb-3">{pack.name}</h1>
-            <p class="text-lg text-muted-foreground">{pack.description}</p>
+            {#if pack.description}
+              <p class="text-lg text-muted-foreground">{pack.description}</p>
+            {/if}
           </div>
 
           <!-- Stats -->
           <div class="grid grid-cols-3 gap-4">
             <Card.Root class="p-4 text-center">
               <p class="text-2xl font-bold text-primary">
-                {pack.totalOpened.toLocaleString()}
+                {pack.total_openings.toLocaleString()}
               </p>
               <p class="text-xs text-muted-foreground">Packs Opened</p>
             </Card.Root>
-            <Card.Root class="p-4 text-center">
-              <p class="text-2xl font-bold text-emerald-500">
-                ${pack.ev.toFixed(2)}
-              </p>
-              <p class="text-xs text-muted-foreground">Expected Value</p>
-            </Card.Root>
-            <Card.Root class="p-4 text-center">
-              <p class="text-2xl font-bold text-amber-500">
-                {pack.odds.find((o) => o.tier === "Chase")?.chance}%
-              </p>
-              <p class="text-xs text-muted-foreground">Chase Rate</p>
-            </Card.Root>
+            {#if expectedValue() > 0}
+              <Card.Root class="p-4 text-center">
+                <p class="text-2xl font-bold text-emerald-500">
+                  ${expectedValue().toFixed(2)}
+                </p>
+                <p class="text-xs text-muted-foreground">Expected Value</p>
+              </Card.Root>
+            {/if}
+            {#if pack.odds && pack.odds.length > 0}
+              {@const chaseOdds = pack.odds.find((o) => o.tier_name === "Chase" || o.tier_name === "Ultra Chase")}
+              {#if chaseOdds}
+                <Card.Root class="p-4 text-center">
+                  <p class="text-2xl font-bold text-amber-500">
+                    {chaseOdds.chance.toFixed(1)}%
+                  </p>
+                  <p class="text-xs text-muted-foreground">Chase Rate</p>
+                </Card.Root>
+              {/if}
+            {/if}
           </div>
 
           <!-- Odds Breakdown -->
-          <Card.Root class="overflow-hidden">
-            <Card.Header class="pb-4">
-              <Card.Title class="flex items-center gap-2">
-                <IconChartBar size={20} />
-                Pull Rates
-              </Card.Title>
-              <Card.Description
-                >Your chances of hitting each tier</Card.Description
-              >
-            </Card.Header>
-            <Card.Content class="pb-6">
-              <div class="space-y-4">
-                {#each pack.odds as odd}
-                  <div class="space-y-2">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-3">
-                        <div class="w-3 h-3 rounded-full {odd.color}"></div>
-                        <span class="font-medium {getTierTextColor(odd.tier)}"
-                          >{odd.tier}</span
-                        >
+          {#if pack.odds && pack.odds.length > 0}
+            <Card.Root class="overflow-hidden">
+              <Card.Header class="pb-4">
+                <Card.Title>Pull Rates</Card.Title>
+                <Card.Description
+                  >Your chances of hitting each tier</Card.Description
+                >
+              </Card.Header>
+              <Card.Content class="pb-6">
+                <div class="space-y-4">
+                  {#each pack.odds as odd}
+                    <div class="space-y-2">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                          <div class="w-3 h-3 rounded-full {getTierColor(odd.tier_name)}"></div>
+                          <span class="font-medium {getTierTextColor(odd.tier_name)}"
+                            >{odd.tier_name}</span
+                          >
+                        </div>
+                        <div class="flex items-center gap-4 text-sm">
+                          <span class="text-muted-foreground">{odd.value_range}</span>
+                          <span class="font-bold w-12 text-right"
+                            >{odd.chance.toFixed(1)}%</span
+                          >
+                        </div>
                       </div>
-                      <div class="flex items-center gap-4 text-sm">
-                        <span class="text-muted-foreground">{odd.value}</span>
-                        <span class="font-bold w-12 text-right"
-                          >{odd.chance}%</span
-                        >
-                      </div>
+                      <Progress value={odd.chance} class="h-2" />
                     </div>
-                    <Progress value={odd.chance} class="h-2" />
-                  </div>
-                {/each}
-              </div>
-            </Card.Content>
-          </Card.Root>
+                  {/each}
+                </div>
+              </Card.Content>
+            </Card.Root>
+          {/if}
 
           <!-- Purchase Section -->
           <Card.Root
@@ -737,14 +405,14 @@
                       <IconCoin size={20} class="text-amber-500" />
                       <span
                         class="text-xl font-bold text-amber-600 dark:text-amber-400"
-                        >{pack.price}</span
+                        >{pack.rip_cost}</span
                       >
                     </div>
-                    {#if pack.ev > pack.price}
+                    {#if expectedValue() > pack.rip_cost}
                       <Badge
                         class="text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
                       >
-                        +{((pack.ev / pack.price - 1) * 100).toFixed(0)}% EV
+                        +{((expectedValue() / pack.rip_cost - 1) * 100).toFixed(0)}% EV
                       </Badge>
                     {/if}
                   </div>
@@ -755,15 +423,15 @@
                 </div>
               </div>
 
-              {#if balance < pack.price}
+              {#if balance < pack.rip_cost}
                 <div class="space-y-3">
                   <p class="text-destructive text-sm text-center">
-                    You need {pack.price - balance} more Rips to open this pack
+                    You need {pack.rip_cost - balance} more Rips to open this pack
                   </p>
                   <Button
                     class="w-full"
                     size="lg"
-                    onclick={() => goto("/store")}
+                    onclick={() => goto("/buy")}
                   >
                     <IconCoin size={18} class="mr-2" />
                     Get Rips
@@ -781,7 +449,7 @@
                     Opening...
                   {:else}
                     <IconSparkles size={18} class="mr-2" />
-                    Open Pack for {pack.price} Rips
+                    Open Pack for {pack.rip_cost} Rips
                   {/if}
                 </Button>
               {/if}

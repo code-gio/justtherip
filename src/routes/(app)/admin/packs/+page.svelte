@@ -1,70 +1,46 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { Button } from "$lib/components/ui/button";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Badge } from "$lib/components/ui/badge";
   import { IconPlus, IconEdit, IconCopy, IconTrash, IconEye, IconEyeOff } from "@tabler/icons-svelte";
-  import PackWizard from "./pack-wizard.svelte";
+  import PackCreateDialog from "$lib/components/admin/packs/pack-create-dialog.svelte";
+  import type { PageData } from "./$types";
 
   /**
    * Admin Pack Management — `/admin/packs`
-   * 
+   *
    * PURPOSE: Create, edit, and manage packs
-   * 
+   *
    * ACCESS: Restricted to admin users only
-   * 
+   *
    * FEATURES:
    * - List all packs (active and inactive)
-   * - Create new pack via multi-step wizard
-   * - Edit existing pack (limited fields)
+   * - Create new pack via simple dialog
+   * - Edit existing pack in dedicated page
    * - Activate/deactivate packs
    * - Duplicate packs
-   * 
+   *
    * VALIDATION:
    * - Odds must sum to exactly 100%
    * - Price must be positive integer
    * - Each tier needs at least one card
    */
 
-  interface Pack {
-    id: string;
-    name: string;
-    description: string | null;
-    image_url: string | null;
-    game: "mtg" | "pokemon";
-    rip_cost: number;
-    is_active: boolean;
-    total_openings: number;
-    created_at: string;
-  }
-
-  // TODO: Load packs from API
-  let packs = $state<Pack[]>([]);
-  let showWizard = $state(false);
-  let editingPackId = $state<string | null>(null);
-
-  // Mock data for development
-  packs = [
-    {
-      id: "1",
-      name: "Standard Pack",
-      description: "Open for a chance to pull valuable cards!",
-      image_url: null,
-      game: "mtg",
-      rip_cost: 1,
-      is_active: true,
-      total_openings: 0,
-      created_at: new Date().toISOString(),
-    },
-  ];
+  let { data }: { data: PageData } = $props();
+  let showCreateDialog = $state(false);
 
   function handleCreatePack() {
-    editingPackId = null;
-    showWizard = true;
+    showCreateDialog = true;
+  }
+
+  function handlePackCreated(packId: string) {
+    // Navigate to the pack editor page
+    goto(`/admin/packs/${packId}`);
   }
 
   function handleEditPack(packId: string) {
-    editingPackId = packId;
-    showWizard = true;
+    goto(`/admin/packs/${packId}`);
   }
 
   function handleDuplicatePack(packId: string) {
@@ -72,23 +48,9 @@
     console.log("Duplicate pack:", packId);
   }
 
-  function handleToggleActive(packId: string) {
+  async function handleToggleActive(packId: string) {
     // TODO: Implement toggle active functionality
-    const pack = packs.find((p) => p.id === packId);
-    if (pack) {
-      pack.is_active = !pack.is_active;
-    }
-  }
-
-  function handleWizardClose() {
-    showWizard = false;
-    editingPackId = null;
-  }
-
-  function handleWizardComplete() {
-    // TODO: Refresh packs list from API
-    showWizard = false;
-    editingPackId = null;
+    console.log("Toggle active:", packId);
   }
 </script>
 
@@ -107,7 +69,7 @@
     </Button>
   </div>
 
-  {#if packs.length === 0}
+  {#if data.packs.length === 0}
     <Card.Root>
       <Card.Content class="py-12 text-center">
         <p class="text-muted-foreground mb-4">No packs created yet.</p>
@@ -119,7 +81,7 @@
     </Card.Root>
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {#each packs as pack (pack.id)}
+      {#each data.packs as pack (pack.id)}
         <Card.Root>
           <Card.Header>
             <div class="flex items-start justify-between">
@@ -137,7 +99,7 @@
           <Card.Content class="space-y-4">
             <div class="flex items-center justify-between text-sm">
               <span class="text-muted-foreground">Game:</span>
-              <span class="font-medium uppercase">{pack.game}</span>
+              <span class="font-medium">{pack.game?.name || "Unknown"}</span>
             </div>
             <div class="flex items-center justify-between text-sm">
               <span class="text-muted-foreground">Rip Cost:</span>
@@ -186,9 +148,8 @@
   {/if}
 </div>
 
-<PackWizard
-  bind:open={showWizard}
-  packId={editingPackId}
-  onComplete={handleWizardComplete}
-  onClose={handleWizardClose}
+<PackCreateDialog
+  bind:open={showCreateDialog}
+  games={data.games}
+  onComplete={handlePackCreated}
 />

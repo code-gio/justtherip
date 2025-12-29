@@ -4,6 +4,7 @@ import { redirect } from "@sveltejs/kit";
 import type { PageServerLoad, Actions } from "./$types.js";
 import { superValidate, fail } from "sveltekit-superforms";
 import { zod4 } from "sveltekit-superforms/adapters";
+import { PUBLIC_APP_URL } from "$env/static/public";
 
 import { AuthErrorMessages, type AuthErrorType } from "$lib/types/auth";
 
@@ -63,11 +64,33 @@ export const actions: Actions = {
         });
       }
 
+      // Determine the correct redirect URL
+      // In development, prefer the actual request origin (localhost)
+      // In production, use PUBLIC_APP_URL if set, otherwise use request origin
+      let redirectUrl: string;
+      
+      if (process.env.NODE_ENV === "development") {
+        // In development, always use the request origin to ensure localhost works
+        const host = event.request.headers.get("host") || event.url.host;
+        const protocol = host?.includes("localhost") ? "http:" : (event.url.protocol || "https:");
+        const origin = `${protocol}//${host}`;
+        redirectUrl = `${origin}/auth/callback`;
+        
+        console.log("🔗 [DEV] Magic link redirect URL:", redirectUrl);
+        console.log("📍 Request origin:", event.url.origin);
+        console.log("📍 Host header:", host);
+      } else {
+        // In production, use PUBLIC_APP_URL if available, otherwise request origin
+        redirectUrl = PUBLIC_APP_URL 
+          ? `${PUBLIC_APP_URL}/auth/callback`
+          : `${event.url.origin}/auth/callback`;
+      }
+
       // Send magic link
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${event.url.origin}/auth/callback`,
+          emailRedirectTo: redirectUrl,
           data: {
             last_sign_in_attempt: new Date().toISOString(),
             ip_address: clientIp,

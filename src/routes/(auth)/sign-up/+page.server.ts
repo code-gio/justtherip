@@ -10,6 +10,7 @@ import {
   type AuthResult,
 } from "$lib/types/auth.js";
 import { handleAuthError, handleUnexpectedError } from "$lib/utils/auth-errors";
+import { supabaseAdmin } from "$lib/server/rips.js";
 
 const AUTH_FORM_ID = "sign-up-form";
 
@@ -37,7 +38,7 @@ export const actions: Actions = {
       });
     }
 
-    const { email, password, firstName, lastName } = form.data;
+    const { email, password, firstName, lastName, username } = form.data;
 
     try {
       // Check if session exists
@@ -84,6 +85,21 @@ export const actions: Actions = {
           form,
           message: "Failed to create user account",
         });
+      }
+
+      // Create profile with username using admin client to bypass RLS
+      const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
+        id: authData.user.id,
+        username,
+        email,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
+      if (profileError) {
+        console.error("Profile creation error:", profileError);
+        // Don't fail the signup if profile creation fails - user can update it later
+        // But log it for debugging
       }
 
       return {

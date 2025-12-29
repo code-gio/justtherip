@@ -17,6 +17,15 @@ export const signUpSchema = z.object({
       /^[a-zA-Z\s-']+$/,
       "Last name can only contain letters, spaces, hyphens, and apostrophes"
     ),
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username must be less than 30 characters")
+    .regex(
+      /^[a-zA-Z0-9_-]+$/,
+      "Username can only contain letters, numbers, underscores, and hyphens"
+    )
+    .transform((username) => username.toLowerCase().trim()),
   email: z
     .string()
     .email("Invalid email address")
@@ -24,15 +33,8 @@ export const signUpSchema = z.object({
     .transform((email) => email.toLowerCase().trim()),
   password: z
     .string()
-    .min(8, "Password must be at least 8 characters long")
-    .max(100, "Password must be less than 100 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number")
-    .regex(
-      /[^A-Za-z0-9]/,
-      "Password must contain at least one special character"
-    ),
+    .min(6, "Password must be at least 6 characters long")
+    .max(100, "Password must be less than 100 characters"),
   agreeToTerms: z.boolean().refine((val) => val === true, {
     message: "You must agree to the terms and conditions",
     path: ["agreeToTerms"],

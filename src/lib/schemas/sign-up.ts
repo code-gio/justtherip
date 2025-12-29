@@ -34,6 +34,12 @@ export const signUpSchema = z.object({
     })
     .refine((username) => /^[a-zA-Z]/.test(username), {
       message: "Username must start with a letter",
+    })
+    .refine((username) => !/[_-]$/.test(username), {
+      message: "Username cannot end with underscore or hyphen",
+    })
+    .refine((username) => !/[_-]{2,}/.test(username), {
+      message: "Username cannot have consecutive underscores or hyphens",
     }),
   email: z
     .string()

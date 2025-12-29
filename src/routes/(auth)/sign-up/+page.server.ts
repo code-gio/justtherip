@@ -41,7 +41,17 @@ export const actions: Actions = {
     const { email, password, firstName, lastName, username } = form.data;
 
     // Validate username after transformation (already lowercased and trimmed by schema)
-    if (!username || username.length < 3 || username.length > 30) {
+    if (!username || typeof username !== 'string') {
+      return setError(
+        form,
+        "username",
+        "Username is required"
+      );
+    }
+
+    const trimmedUsername = username.trim();
+    
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 30) {
       return setError(
         form,
         "username",
@@ -51,7 +61,7 @@ export const actions: Actions = {
 
     // Ensure username matches database constraint pattern
     // Database constraint likely requires: alphanumeric, underscore, hyphen, and possibly must start with letter
-    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+    if (!/^[a-zA-Z0-9_-]+$/.test(trimmedUsername)) {
       return setError(
         form,
         "username",
@@ -60,13 +70,34 @@ export const actions: Actions = {
     }
 
     // Many database constraints require username to start with a letter
-    if (!/^[a-zA-Z]/.test(username)) {
+    if (!/^[a-zA-Z]/.test(trimmedUsername)) {
       return setError(
         form,
         "username",
         "Username must start with a letter"
       );
     }
+
+    // Ensure username doesn't end with underscore or hyphen (common constraint)
+    if (/[_-]$/.test(trimmedUsername)) {
+      return setError(
+        form,
+        "username",
+        "Username cannot end with underscore or hyphen"
+      );
+    }
+
+    // Ensure no consecutive special characters
+    if (/[_-]{2,}/.test(trimmedUsername)) {
+      return setError(
+        form,
+        "username",
+        "Username cannot have consecutive underscores or hyphens"
+      );
+    }
+
+    // Use the validated and trimmed username
+    const validatedUsername = trimmedUsername;
 
     try {
       // Check if session exists
@@ -78,7 +109,32 @@ export const actions: Actions = {
         });
       }
 
+      // IMPORTANT: Check username uniqueness BEFORE creating auth user
+      // This prevents creating orphaned auth users if username is taken
+      const { data: existingProfile, error: checkError } = await supabaseAdmin
+        .from("profiles")
+        .select("id, username")
+        .eq("username", validatedUsername)
+        .maybeSingle();
+
+      if (checkError && checkError.code !== "PGRST116") {
+        console.error("Error checking username uniqueness:", checkError);
+        return fail(500, {
+          form,
+          message: "Error checking username availability. Please try again.",
+        });
+      }
+
+      if (existingProfile) {
+        return setError(
+          form,
+          "username",
+          "This username is already taken. Please choose another."
+        );
+      }
+
       // Attempt to sign up the user
+      // According to Supabase docs, user metadata goes in options.data
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -86,6 +142,7 @@ export const actions: Actions = {
           data: {
             first_name: firstName,
             last_name: lastName,
+            username: validatedUsername,
           },
           emailRedirectTo: `${event.url.origin}/auth/callback`,
         },
@@ -99,8 +156,8 @@ export const actions: Actions = {
         });
       }
 
-      // Check for existing user
-      if (!authError && authData.user && !authData.user.identities?.length) {
+      // Check for existing user (Supabase returns this if email already exists)
+      if (authData.user && !authData.user.identities?.length) {
         return setError(
           form,
           "email",
@@ -108,6 +165,7 @@ export const actions: Actions = {
         );
       }
 
+      // If email confirmation is required, user might be null initially
       if (!authData.user) {
         return fail(500, {
           form,
@@ -115,33 +173,46 @@ export const actions: Actions = {
         });
       }
 
-      // Create profile with username using admin client to bypass RLS
-      const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
-        id: authData.user.id,
-        username,
-        email,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+      // Database trigger will create the profile automatically
+      // We just need to update it with the username after the trigger runs
+      // Wait a moment for the trigger to complete, then update the profile
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const { error: profileError } = await supabaseAdmin
+        .from("profiles")
+        .update({
+          username: validatedUsername,
+          email,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", authData.user.id);
 
       if (profileError) {
-        console.error("Profile creation error:", profileError);
+        console.error("Profile update error:", profileError);
+        console.error("Error details:", JSON.stringify(profileError, null, 2));
+        console.error("Attempted username:", validatedUsername);
         
         // Check if it's a username constraint violation
         if (profileError.message?.includes("profiles_username_check1") || 
-            profileError.message?.includes("username")) {
+            profileError.message?.includes("username") ||
+            profileError.code === "23514") {
+          // Extract more specific error message if available
+          let errorMessage = "Username is invalid. Please choose a different username.";
+          
+          if (profileError.message?.includes("check constraint")) {
+            errorMessage = "Username does not meet requirements. It must start with a letter and contain only letters, numbers, underscores, and hyphens.";
+          }
+          
           return setError(
             form,
             "username",
-            "Username is invalid. Please choose a different username."
+            errorMessage
           );
         }
         
-        // For other profile errors, still fail but with a generic message
-        return fail(500, {
-          form,
-          message: "Account created but profile setup failed. Please try updating your profile later.",
-        });
+        // For other profile errors, log but don't fail signup
+        // User can update their profile later
+        console.warn("Profile update failed, but user account was created:", profileError);
       }
 
       return {

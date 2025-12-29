@@ -14,133 +14,237 @@
     IconClock,
     IconArrowRight,
     IconActivity,
+    IconTrophy,
+    IconChartLine,
+    IconTarget,
+    IconFlame,
+    IconTrendingDown,
   } from "@tabler/icons-svelte";
+  import type { PageData } from "./$types";
 
-  // Mock state data
-  let packsOpened = $state(127);
-  let cardsOwned = $state(89);
-  let pendingShipments = $state(3);
-  let isLoading = $state(true);
+  let { data }: { data: PageData } = $props();
+  let { stats, balance, recentActivity } = $derived(data);
 
-  // Mock recent activity
-  const recentActivity = $state([
-    {
-      id: "1",
-      type: "pack_open",
-      description: "Opened Pokémon Scarlet & Violet Pack",
-      timestamp: "2 hours ago",
-      icon: IconPackage,
-      value: "+1 Rare Card",
-    },
-    {
-      id: "2",
-      type: "sell",
-      description: "Sold Charizard EX for Rips",
-      timestamp: "5 hours ago",
-      icon: IconCoin,
-      value: "+12.50 Rips",
-    },
-    {
-      id: "3",
-      type: "shipment",
-      description: "Shipment #1234 marked as shipped",
-      timestamp: "1 day ago",
-      icon: IconTruck,
-      value: "In Transit",
-    },
-    {
-      id: "4",
-      type: "pack_open",
-      description: "Opened MTG Modern Horizons Pack",
-      timestamp: "2 days ago",
-      icon: IconPackage,
-      value: "+1 Common Card",
-    },
-    {
-      id: "5",
-      type: "purchase",
-      description: "Purchased 25 Rips Bundle",
-      timestamp: "3 days ago",
-      icon: IconCoin,
-      value: "+25.00 Rips",
-    },
-  ]);
+  // Map activity types to icons
+  function getActivityIcon(type: string) {
+    switch (type) {
+      case "pack_open":
+        return IconPackage;
+      case "sell":
+      case "purchase":
+        return IconCoin;
+      case "shipment":
+        return IconTruck;
+      default:
+        return IconActivity;
+    }
+  }
 
-  // Stats configuration
-  const stats = $derived([
+  // Primary stats configuration
+  const primaryStats = $derived([
     {
       title: "Packs Opened",
-      value: packsOpened.toString(),
+      value: stats?.packsOpened?.toLocaleString() || "0",
       suffix: "total",
       icon: IconPackage,
-      trend: "+12 this week",
-      trendUp: true,
+      trend: `+${stats?.packsThisWeek || 0} this week`,
+      trendUp: (stats?.packsThisWeek || 0) > 0,
     },
     {
       title: "Cards Owned",
-      value: cardsOwned.toString(),
+      value: stats?.cardsOwned?.toLocaleString() || "0",
       suffix: "cards",
       icon: IconCards,
-      trend: "8 rare+",
-      trendUp: true,
+      trend: `${stats?.rareCardsCount || 0} rare+`,
+      trendUp: (stats?.rareCardsCount || 0) > 0,
     },
     {
-      title: "Pending Shipments",
-      value: pendingShipments.toString(),
-      suffix: "active",
-      icon: IconTruck,
-      trend: "2 shipped",
-      trendUp: false,
+      title: "Inventory Value",
+      value: `$${((stats?.inventoryValue || 0) / 100).toFixed(2)}`,
+      suffix: "",
+      icon: IconTrophy,
+      trend: `${stats?.cardsOwned || 0} cards`,
+      trendUp: true,
     },
   ]);
 
-  // Simulate loading
-  $effect(() => {
-    const timer = setTimeout(() => {
-      isLoading = false;
-    }, 800);
-    return () => clearTimeout(timer);
-  });
+  // ROI & Performance stats
+  const performanceStats = $derived([
+    {
+      title: "Total Value Pulled",
+      value: `$${((stats?.totalValuePulled || 0) / 100).toFixed(2)}`,
+      suffix: "",
+      icon: IconChartLine,
+      trend: `${stats?.packsOpened || 0} packs`,
+      trendUp: true,
+      color: "text-emerald-600 dark:text-emerald-400",
+    },
+    {
+      title: "Net P&L",
+      value: `$${((stats?.netProfitLoss || 0) / 100).toFixed(2)}`,
+      suffix: "",
+      icon: stats?.netProfitLoss && stats.netProfitLoss >= 0 ? IconTrendingUp : IconTrendingDown,
+      trend: `${(stats?.roiPercentage || 0).toFixed(1)}% ROI`,
+      trendUp: (stats?.netProfitLoss || 0) >= 0,
+      color: (stats?.netProfitLoss || 0) >= 0 
+        ? "text-emerald-600 dark:text-emerald-400" 
+        : "text-destructive",
+    },
+    {
+      title: "Avg Pack Value",
+      value: `$${((stats?.averagePackValue || 0) / 100).toFixed(2)}`,
+      suffix: "",
+      icon: IconTarget,
+      trend: `${(stats?.winRate || 0).toFixed(1)}% win rate`,
+      trendUp: (stats?.averagePackValue || 0) > 0,
+    },
+  ]);
+
+  // Activity stats
+  const activityStats = $derived([
+    {
+      title: "Cards Sold",
+      value: (stats?.cardsSoldCount || 0).toLocaleString(),
+      suffix: "cards",
+      icon: IconCoin,
+      trend: `+${((stats?.totalRipsFromSellbacks || 0) / 100).toFixed(2)} Rips earned`,
+      trendUp: (stats?.cardsSoldCount || 0) > 0,
+    },
+    {
+      title: "Opening Streak",
+      value: (stats?.openingStreak || 0).toString(),
+      suffix: "days",
+      icon: IconFlame,
+      trend: stats?.mostOpenedPack || "No favorite pack",
+      trendUp: (stats?.openingStreak || 0) > 0,
+    },
+    {
+      title: "Avg Per Week",
+      value: (stats?.avgPacksPerWeek || 0).toFixed(1),
+      suffix: "packs",
+      icon: IconTrendingUp,
+      trend: `${(stats?.avgPacksPerDay || 0).toFixed(1)} per day`,
+      trendUp: (stats?.avgPacksPerWeek || 0) > 0,
+    },
+  ]);
+
+  // Format recent activity with icons
+  const formattedActivity = $derived(
+    (recentActivity || []).map((activity) => ({
+      ...activity,
+      icon: getActivityIcon(activity.type),
+    }))
+  );
 </script>
 
 <div class="space-y-6">
-  <!-- Stats Grid -->
+  <!-- Primary Stats Grid -->
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-    {#each stats as stat (stat.title)}
+    {#each primaryStats as stat (stat.title)}
       <Card.Root>
         <Card.Content class="p-6">
-          {#if isLoading}
-            <div class="space-y-3">
-              <Skeleton class="h-4 w-24" />
-              <Skeleton class="h-8 w-32" />
-              <Skeleton class="h-3 w-20" />
-            </div>
-          {:else}
-            <div class="flex items-start justify-between">
-              <div class="space-y-1">
-                <p class="text-sm font-medium text-muted-foreground">
-                  {stat.title}
-                </p>
-                <div class="flex items-baseline gap-2">
-                  <span class="text-3xl font-bold tracking-tight">
-                    {stat.value}
-                  </span>
+          <div class="flex items-start justify-between">
+            <div class="space-y-1">
+              <p class="text-sm font-medium text-muted-foreground">
+                {stat.title}
+              </p>
+              <div class="flex items-baseline gap-2">
+                <span class="text-3xl font-bold tracking-tight">
+                  {stat.value}
+                </span>
+                {#if stat.suffix}
                   <span class="text-sm text-muted-foreground">
                     {stat.suffix}
                   </span>
-                </div>
-                <div
-                  class="flex items-center gap-1 text-xs text-muted-foreground"
-                >
-                  <IconTrendingUp size={14} />
-                  <span>{stat.trend}</span>
-                </div>
+                {/if}
               </div>
-              <div class="p-3 rounded-xl bg-muted">
-                <stat.icon size={24} class="text-foreground" />
+              <div
+                class="flex items-center gap-1 text-xs text-muted-foreground"
+              >
+                <IconTrendingUp size={14} />
+                <span>{stat.trend}</span>
               </div>
             </div>
-          {/if}
+            <div class="p-3 rounded-xl bg-muted">
+              <stat.icon size={24} class="text-foreground" />
+            </div>
+          </div>
+        </Card.Content>
+      </Card.Root>
+    {/each}
+  </div>
+
+  <!-- Performance Stats Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    {#each performanceStats as stat (stat.title)}
+      <Card.Root>
+        <Card.Content class="p-6">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1">
+              <p class="text-sm font-medium text-muted-foreground">
+                {stat.title}
+              </p>
+              <div class="flex items-baseline gap-2">
+                <span class="text-3xl font-bold tracking-tight {stat.color || ''}">
+                  {stat.value}
+                </span>
+                {#if stat.suffix}
+                  <span class="text-sm text-muted-foreground">
+                    {stat.suffix}
+                  </span>
+                {/if}
+              </div>
+              <div
+                class="flex items-center gap-1 text-xs text-muted-foreground"
+              >
+                {#if stat.trendUp}
+                  <IconTrendingUp size={14} />
+                {:else}
+                  <IconTrendingDown size={14} />
+                {/if}
+                <span>{stat.trend}</span>
+              </div>
+            </div>
+            <div class="p-3 rounded-xl bg-muted">
+              <stat.icon size={24} class="text-foreground" />
+            </div>
+          </div>
+        </Card.Content>
+      </Card.Root>
+    {/each}
+  </div>
+
+  <!-- Activity Stats Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    {#each activityStats as stat (stat.title)}
+      <Card.Root>
+        <Card.Content class="p-6">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1">
+              <p class="text-sm font-medium text-muted-foreground">
+                {stat.title}
+              </p>
+              <div class="flex items-baseline gap-2">
+                <span class="text-3xl font-bold tracking-tight">
+                  {stat.value}
+                </span>
+                {#if stat.suffix}
+                  <span class="text-sm text-muted-foreground">
+                    {stat.suffix}
+                  </span>
+                {/if}
+              </div>
+              <div
+                class="flex items-center gap-1 text-xs text-muted-foreground"
+              >
+                <IconTrendingUp size={14} />
+                <span class="truncate">{stat.trend}</span>
+              </div>
+            </div>
+            <div class="p-3 rounded-xl bg-muted">
+              <stat.icon size={24} class="text-foreground" />
+            </div>
+          </div>
         </Card.Content>
       </Card.Root>
     {/each}
@@ -158,18 +262,7 @@
           </Button>
         </Card.Header>
         <Card.Content class="space-y-1">
-          {#if isLoading}
-            {#each Array(5) as _, i}
-              <div class="flex items-center gap-4 p-3">
-                <Skeleton class="h-10 w-10 rounded-full" />
-                <div class="flex-1 space-y-2">
-                  <Skeleton class="h-4 w-3/4" />
-                  <Skeleton class="h-3 w-1/4" />
-                </div>
-                <Skeleton class="h-5 w-20" />
-              </div>
-            {/each}
-          {:else if recentActivity.length === 0}
+          {#if !formattedActivity || formattedActivity.length === 0}
             <Empty.Root class="py-8">
               <Empty.Header>
                 <Empty.Media variant="icon">
@@ -188,7 +281,7 @@
               </Empty.Content>
             </Empty.Root>
           {:else}
-            {#each recentActivity as activity (activity.id)}
+            {#each formattedActivity as activity (activity.id)}
               <div
                 class="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
               >
@@ -214,8 +307,94 @@
       </Card.Root>
     </div>
 
-    <!-- Quick Actions -->
+    <!-- Quick Actions & Collection Insights -->
     <div class="space-y-6">
+      {#if stats?.bestPull}
+        <Card.Root>
+          <Card.Header>
+            <Card.Title>Best Pull</Card.Title>
+          </Card.Header>
+          <Card.Content>
+            <div class="space-y-2">
+              <p class="text-lg font-semibold">{stats.bestPull.card_name}</p>
+              <p class="text-sm text-muted-foreground">{stats.bestPull.tier_name}</p>
+              <p class="text-2xl font-bold text-primary">
+                ${((stats.bestPull.value_cents || 0) / 100).toFixed(2)}
+              </p>
+            </div>
+          </Card.Content>
+        </Card.Root>
+      {/if}
+
+      {#if stats?.topValuableCards && stats.topValuableCards.length > 0}
+        <Card.Root>
+          <Card.Header>
+            <Card.Title>Top Cards</Card.Title>
+          </Card.Header>
+          <Card.Content class="space-y-2">
+            {#each stats.topValuableCards.slice(0, 3) as card}
+              <div class="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium truncate">{card.card_name}</p>
+                  <p class="text-xs text-muted-foreground">{card.tier_name}</p>
+                </div>
+                <p class="text-sm font-bold text-primary ml-2">
+                  ${((card.value_cents || 0) / 100).toFixed(2)}
+                </p>
+              </div>
+            {/each}
+          </Card.Content>
+        </Card.Root>
+      {/if}
+
+      {#if stats?.cardsByGame && Object.keys(stats.cardsByGame).length > 0}
+        <Card.Root>
+          <Card.Header>
+            <Card.Title>By Game</Card.Title>
+          </Card.Header>
+          <Card.Content class="space-y-2">
+            {#each Object.entries(stats.cardsByGame) as [game, count]}
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium uppercase">{game}</span>
+                <span class="text-sm text-muted-foreground">{count} cards</span>
+              </div>
+            {/each}
+          </Card.Content>
+        </Card.Root>
+      {/if}
+
+      {#if stats?.totalRipsSpent || stats?.totalRipsPurchased}
+        <Card.Root>
+          <Card.Header>
+            <Card.Title>Rips Summary</Card.Title>
+          </Card.Header>
+          <Card.Content class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-muted-foreground">Purchased</span>
+              <span class="text-sm font-semibold">{(stats?.totalRipsPurchased || 0).toFixed(2)} Rips</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-muted-foreground">Spent on Packs</span>
+              <span class="text-sm font-semibold">{(stats?.totalRipsSpent || 0).toFixed(2)} Rips</span>
+            </div>
+            {#if stats?.totalRipsFromSellbacks}
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-muted-foreground">From Sellbacks</span>
+                <span class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                  +{(stats.totalRipsFromSellbacks / 100).toFixed(2)} Rips
+                </span>
+              </div>
+            {/if}
+            <div class="pt-2 border-t">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium">Current Balance</span>
+                <span class="text-lg font-bold text-primary">{balance || 0} Rips</span>
+              </div>
+            </div>
+          </Card.Content>
+        </Card.Root>
+      {/if}
+
       <Card.Root>
         <Card.Header>
           <Card.Title>Quick Actions</Card.Title>
@@ -242,7 +421,7 @@
             <div class="text-left">
               <div class="font-medium">View Inventory</div>
               <div class="text-xs text-muted-foreground">
-                {cardsOwned} cards
+                {stats?.cardsOwned || 0} cards
               </div>
             </div>
           </Button>
@@ -257,7 +436,9 @@
             </div>
             <div class="text-left">
               <div class="font-medium">Buy Rips</div>
-              <div class="text-xs text-muted-foreground">Add more balance</div>
+              <div class="text-xs text-muted-foreground">
+                Balance: {balance || 0} Rips
+              </div>
             </div>
           </Button>
 
@@ -272,7 +453,7 @@
             <div class="text-left">
               <div class="font-medium">Track Shipments</div>
               <div class="text-xs text-muted-foreground">
-                {pendingShipments} pending
+                {stats?.pendingShipments || 0} pending
               </div>
             </div>
           </Button>

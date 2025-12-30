@@ -1,4 +1,4 @@
-import { redirect } from "@sveltejs/kit";
+import { redirect, fail } from "@sveltejs/kit";
 import type { PageServerLoad, Actions } from "./$types";
 import { adminClient } from "$lib/server/rips";
 
@@ -71,13 +71,21 @@ export const actions = {
     const { session, user } = await locals.safeGetSession();
 
     if (!session || !user) {
-      return { success: false, error: "Unauthorized" };
+      return fail(401, { success: false, error: "Unauthorized" });
     }
 
     const formData = await request.formData();
     const name = formData.get("name") as string;
     const slug = formData.get("slug") as string;
     const game_code = formData.get("game_code") as string;
+
+    // Validate required fields
+    if (!name || !slug || !game_code) {
+      return fail(400, {
+        success: false,
+        error: "Missing required fields: name, slug, or game_code",
+      });
+    }
 
     // Insert pack using admin client to bypass RLS
     const { data: pack, error } = await adminClient
@@ -95,7 +103,7 @@ export const actions = {
 
     if (error) {
       console.error("Error creating pack:", error);
-      return { success: false, error: error.message };
+      return fail(500, { success: false, error: error.message });
     }
 
     return { success: true, packId: pack.id };

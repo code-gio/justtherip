@@ -29,7 +29,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
     // Optional filter by tier
     const tierFilter = url.searchParams.get("tier");
 
-    // Build query
+    // Build query - show all cards that aren't sold (including shipped ones for visibility)
     let query = adminClient
       .from("user_inventory")
       .select("*", { count: "exact" })

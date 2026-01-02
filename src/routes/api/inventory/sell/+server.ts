@@ -37,12 +37,36 @@ export const POST: RequestHandler = async ({ locals, request }) => {
       .select("*")
       .eq("id", card_id)
       .eq("user_id", user.id)
-      .eq("sold", false)
+      .eq("is_sold", false)
+      .eq("is_shipped", false)
       .single();
 
     if (fetchError || !card) {
+      // Check if card exists but is sold or shipped
+      const { data: existingCard } = await adminClient
+        .from("user_inventory")
+        .select("is_sold, is_shipped, shipment_id")
+        .eq("id", card_id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (existingCard) {
+        if (existingCard.is_sold) {
+          return json(
+            { error: "Card has already been sold" },
+            { status: 400 }
+          );
+        }
+        if (existingCard.is_shipped || existingCard.shipment_id) {
+          return json(
+            { error: "Card has already been shipped and cannot be sold" },
+            { status: 400 }
+          );
+        }
+      }
+
       return json(
-        { error: "Card not found or already sold" },
+        { error: "Card not found" },
         { status: 404 }
       );
     }
@@ -70,9 +94,9 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     const { error: updateError } = await adminClient
       .from("user_inventory")
       .update({
-        sold: true,
+        is_sold: true,
         sold_at: new Date().toISOString(),
-        sold_for_rips: sellbackRips,
+        sellback_rips: sellbackRips,
       })
       .eq("id", card_id);
 

@@ -8,6 +8,7 @@
     InventoryGrid,
     SellBackInfo,
   } from "$lib/components/inventory";
+  import ShipCardDialog from "$lib/components/inventory/ship-card-dialog.svelte";
 
   let { data } = $props();
 
@@ -16,6 +17,8 @@
   let stats = $state<any>(null);
   let sellingCardId = $state<string | null>(null);
   let shippingCardId = $state<string | null>(null);
+  let shipDialogOpen = $state(false);
+  let cardToShip = $state<any>(null);
 
   async function loadInventory() {
     try {
@@ -72,7 +75,15 @@
     }
   }
 
-  async function shipCard(cardId: string) {
+  function openShipDialog(cardId: string) {
+    const card = cards.find((c) => c.id === cardId);
+    if (card) {
+      cardToShip = card;
+      shipDialogOpen = true;
+    }
+  }
+
+  async function shipCard(cardId: string, shippingAddressId?: string) {
     try {
       shippingCardId = cardId;
 
@@ -81,7 +92,10 @@
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ card_id: cardId }),
+        body: JSON.stringify({ 
+          card_id: cardId,
+          shipping_address_id: shippingAddressId,
+        }),
       });
 
       if (!response.ok) {
@@ -100,9 +114,15 @@
       toast.error(
         error instanceof Error ? error.message : "Failed to ship card"
       );
+      throw error;
     } finally {
       shippingCardId = null;
     }
+  }
+
+  function closeShipDialog() {
+    shipDialogOpen = false;
+    cardToShip = null;
   }
 
   onMount(() => {
@@ -119,7 +139,16 @@
     {sellingCardId}
     shippingCardId={shippingCardId}
     onSell={sellCard}
-    onShip={shipCard}
+    onShip={openShipDialog}
   />
   <SellBackInfo />
 </div>
+
+{#if cardToShip}
+  <ShipCardDialog
+    bind:open={shipDialogOpen}
+    card={cardToShip}
+    onShip={shipCard}
+    onClose={closeShipDialog}
+  />
+{/if}

@@ -13,6 +13,9 @@
     card_name: string | null;
     card_value_cents: number;
     created_at: string;
+    is_sold?: boolean;
+    is_shipped?: boolean;
+    shipment_id?: string | null;
   }
 
   interface Props {

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+  import { toast } from "svelte-sonner";
   import * as Tabs from "$lib/components/ui/tabs/index.js";
   import * as Empty from "$lib/components/ui/empty/index.js";
   import { Skeleton } from "$lib/components/ui/skeleton";
@@ -11,74 +13,8 @@
 
   // State
   let isLoading = $state(true);
-  let selectedYear = $state("2025");
   let activeTab = $state("all");
-
-  // Mock shipments data
-  const allShipments = $state<Shipment[]>([
-    {
-      id: "SHP-2024-001",
-      cardName: "Charizard VMAX",
-      cardTier: "Ultra Chase",
-      cardValue: "$425.00",
-      status: "shipped",
-      requestDate: "Dec 15, 2025",
-      trackingNumber: "1Z999AA10123456784",
-      carrier: "UPS",
-      estimatedDelivery: "Dec 23, 2025",
-      shippingAddress: "280 Suzanne Throughway, New York, NY 10001, US",
-    },
-    {
-      id: "SHP-2024-002",
-      cardName: "Black Lotus (NM)",
-      cardTier: "Chase",
-      cardValue: "$289.00",
-      status: "processing",
-      requestDate: "Dec 18, 2025",
-      trackingNumber: null,
-      carrier: null,
-      estimatedDelivery: null,
-      shippingAddress: "280 Suzanne Throughway, New York, NY 10001, US",
-    },
-    {
-      id: "SHP-2024-003",
-      cardName: "Pikachu Illustrator",
-      cardTier: "Ultra Chase",
-      cardValue: "$500.00",
-      status: "pending",
-      requestDate: "Dec 20, 2025",
-      trackingNumber: null,
-      carrier: null,
-      estimatedDelivery: null,
-      shippingAddress: "280 Suzanne Throughway, New York, NY 10001, US",
-    },
-    {
-      id: "SHP-2024-004",
-      cardName: "Mewtwo GX",
-      cardTier: "Rare",
-      cardValue: "$45.00",
-      status: "delivered",
-      requestDate: "Dec 5, 2025",
-      trackingNumber: "1Z999AA10123456780",
-      carrier: "UPS",
-      estimatedDelivery: "Dec 12, 2025",
-      deliveredDate: "Dec 12, 2025",
-      shippingAddress: "280 Suzanne Throughway, New York, NY 10001, US",
-    },
-    {
-      id: "SHP-2024-005",
-      cardName: "Liliana of the Veil",
-      cardTier: "Chase",
-      cardValue: "$156.00",
-      status: "delivered",
-      requestDate: "Dec 1, 2025",
-      trackingNumber: "9400111899223033034400",
-      carrier: "USPS",
-      estimatedDelivery: "Dec 8, 2025",
-      deliveredDate: "Dec 8, 2025",
-      shippingAddress: "280 Suzanne Throughway, New York, NY 10001, US",
-    },
-  ]);
+  let allShipments = $state<Shipment[]>([]);
 
   // Filtered shipments based on tab
   const filteredShipments = $derived(() => {
@@ -99,12 +35,27 @@
     allShipments.filter((s) => s.status === "delivered").length
   );
 
-  // Simulate loading
-  $effect(() => {
-    const timer = setTimeout(() => {
+  async function loadShipments() {
+    try {
+      isLoading = true;
+      const response = await fetch("/api/shipments");
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch shipments");
+      }
+
+      const result = await response.json();
+      allShipments = result.shipments || [];
+    } catch (error) {
+      console.error("Error loading shipments:", error);
+      toast.error("Failed to load shipments");
+    } finally {
       isLoading = false;
-    }, 700);
-    return () => clearTimeout(timer);
+    }
+  }
+
+  onMount(() => {
+    loadShipments();
   });
 </script>
 

@@ -7,6 +7,8 @@
     IconTrophy,
     IconPackage,
     IconCoins,
+    IconCheck,
+    IconTruck,
   } from "@tabler/icons-svelte";
 
   interface CardData {
@@ -16,6 +18,9 @@
     card_name: string | null;
     card_value_cents: number;
     created_at: string;
+    is_sold?: boolean;
+    is_shipped?: boolean;
+    shipment_id?: string | null;
   }
 
   interface Props {
@@ -31,6 +36,10 @@
   let dialogOpen = $state(false);
   const sellbackRips = $derived((card.card_value_cents * 0.85 / 100).toFixed(2));
   const cardValue = $derived((card.card_value_cents / 100).toFixed(2));
+  const isSold = $derived(card.is_sold === true);
+  const isShipped = $derived(card.is_shipped === true || card.shipment_id !== null);
+  const canSell = $derived(!isSold && !isShipped);
+  const canShip = $derived(!isSold && !isShipped);
 
   function handleOpenDialog() {
     dialogOpen = true;
@@ -54,21 +63,45 @@
   }
 </script>
 
-<div>
+<div class="relative">
+  <!-- Status Badge Overlay -->
+  {#if isSold || isShipped}
+    <div class="absolute top-2 right-2 z-10">
+      {#if isSold}
+        <Badge variant="destructive" class="text-xs">
+          <IconCheck size={12} class="mr-1" />
+          Sold
+        </Badge>
+      {:else if isShipped}
+        <Badge class="text-xs">
+          <IconTruck size={12} class="mr-1" />
+          Shipped
+        </Badge>
+      {/if}
+    </div>
+  {/if}
+
   <button
     type="button"
-    class="cursor-pointer w-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg"
+    class="cursor-pointer w-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg relative {
+      isSold || isShipped ? 'opacity-75' : ''
+    }"
     onclick={handleOpenDialog}
     onkeydown={handleKeyDown}
+    disabled={isSold && isShipped}
   >
     {#if card.card_image_url}
       <img
         src={card.card_image_url}
         alt={card.card_name || "Card"}
-        class="w-full rounded-lg object-cover hover:opacity-90 transition-opacity"
+        class="w-full rounded-lg object-cover hover:opacity-90 transition-opacity {
+          isSold || isShipped ? 'grayscale' : ''
+        }"
       />
     {:else}
-      <div class="w-full rounded-lg bg-muted flex items-center justify-center hover:opacity-90 transition-opacity">
+      <div class="w-full rounded-lg bg-muted flex items-center justify-center hover:opacity-90 transition-opacity {
+        isSold || isShipped ? 'opacity-50' : ''
+      }">
         <IconTrophy size={64} class="text-muted-foreground" />
       </div>
     {/if}
@@ -89,26 +122,26 @@
         size="icon"
         variant="ghost"
         onclick={handleSell}
-        disabled={isSelling || isShipping}
-        title="Sell Card"
+        disabled={isSelling || isShipping || !canSell}
+        title={isSold ? "Card already sold" : isShipped ? "Card already shipped" : "Sell Card"}
       >
         {#if isSelling}
           <IconLoader2 size={18} class="animate-spin" />
         {:else}
-          <IconCoins size={18} />
+          <IconCoins size={18} class={!canSell ? "opacity-50" : ""} />
         {/if}
       </Button>
       <Button
         size="icon"
         variant="ghost"
         onclick={handleShip}
-        disabled={isSelling || isShipping}
-        title="Ship Card"
+        disabled={isSelling || isShipping || !canShip}
+        title={isSold ? "Card already sold" : isShipped ? "Card already shipped" : "Ship Card"}
       >
         {#if isShipping}
           <IconLoader2 size={18} class="animate-spin" />
         {:else}
-          <IconPackage size={18} />
+          <IconPackage size={18} class={!canShip ? "opacity-50" : ""} />
         {/if}
       </Button>
     </div>
@@ -159,40 +192,59 @@
           </p>
         </div>
 
-        <div class="flex flex-col gap-3 pt-4">
-          <Button
-            class="w-full"
-            variant="outline"
-            onclick={() => {
-              onSell(card.id);
-              dialogOpen = false;
-            }}
-            disabled={isSelling || isShipping}
-          >
-            {#if isSelling}
-              <IconLoader2 class="mr-2 animate-spin" size={16} />
-              Selling...
-            {:else}
-              Sell Card
-            {/if}
-          </Button>
-          <Button
-            class="w-full"
-            onclick={() => {
-              onShip(card.id);
-              dialogOpen = false;
-            }}
-            disabled={isSelling || isShipping}
-          >
-            {#if isShipping}
-              <IconLoader2 class="mr-2 animate-spin" size={16} />
-              Shipping...
-            {:else}
+        {#if isSold || isShipped}
+          <div class="pt-4">
+            <div class="p-3 rounded-lg bg-muted border">
+              {#if isSold}
+                <p class="text-sm font-medium text-destructive flex items-center gap-2">
+                  <IconCheck size={16} />
+                  This card has been sold
+                </p>
+                <p class="text-xs text-muted-foreground mt-1">
+                  Sold cards cannot be shipped or sold again.
+                </p>
+              {:else if isShipped}
+                <p class="text-sm font-medium flex items-center gap-2">
+                  <IconTruck size={16} />
+                  This card has been shipped
+                </p>
+                <p class="text-xs text-muted-foreground mt-1">
+                  Shipped cards cannot be sold or shipped again.
+                </p>
+              {/if}
+            </div>
+          </div>
+        {:else}
+          <div class="flex flex-col gap-3 pt-4">
+            <Button
+              class="w-full"
+              variant="outline"
+              onclick={() => {
+                onSell(card.id);
+                dialogOpen = false;
+              }}
+              disabled={isSelling || isShipping}
+            >
+              {#if isSelling}
+                <IconLoader2 class="mr-2 animate-spin" size={16} />
+                Selling...
+              {:else}
+                Sell Card
+              {/if}
+            </Button>
+            <Button
+              class="w-full"
+              onclick={() => {
+                dialogOpen = false;
+                onShip(card.id);
+              }}
+              disabled={isSelling || isShipping}
+            >
               <IconPackage class="mr-2" size={16} />
               Ship Card
-            {/if}
-          </Button>
-        </div>
+            </Button>
+          </div>
+        {/if}
       </div>
     </div>
   </Dialog.Content>

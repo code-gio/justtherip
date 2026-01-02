@@ -19,6 +19,19 @@
   let pulledCard = $state<any>(null);
   let showCardReveal = $state(false);
 
+  // TRACE: Log whenever pulledCard changes
+  $effect(() => {
+    if (pulledCard) {
+      console.log("[TRACE] pulledCard changed (reactive):", {
+        card_name: pulledCard.card_name,
+        tier_name: pulledCard.tier_name,
+        has_card_name: !!pulledCard.card_name,
+        all_keys: Object.keys(pulledCard),
+        full_object: JSON.stringify(pulledCard, null, 2)
+      });
+    }
+  });
+
   async function openPack() {
     if (!pack || balance < pack.rip_cost) {
       toast.error("Insufficient Rips! Purchase more from the store.");
@@ -42,9 +55,28 @@
       }
 
       const result = await response.json();
+      
+      // TRACE: Log the API response
+      console.log("[TRACE] API Response received:", {
+        success: result.success,
+        card: result.card,
+        card_name: result.card?.card_name,
+        tier_name: result.card?.tier_name,
+        fullResponse: JSON.stringify(result, null, 2)
+      });
+
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       pulledCard = result.card;
+      
+      // TRACE: Log the pulledCard state after assignment
+      console.log("[TRACE] pulledCard state after assignment:", {
+        card_name: pulledCard?.card_name,
+        tier_name: pulledCard?.tier_name,
+        has_card_name: !!pulledCard?.card_name,
+        fullPulledCard: JSON.stringify(pulledCard, null, 2)
+      });
+
       showCardReveal = true;
       await invalidateAll();
 
@@ -151,9 +183,23 @@
                   ${((pulledCard.value_cents || 0) / 100).toFixed(2)}
                 </div>
 
-                <p class="text-xl font-semibold mb-2">
-                  {pulledCard.card_name || `${pulledCard.tier_name} Card`}
-                </p>
+                {#if pulledCard}
+                  <!-- TRACE: Log card name before display -->
+                  {@const cardDisplayName = pulledCard.card_name || `${pulledCard.tier_name} Card`}
+                  {(() => {
+                    console.log("[TRACE] Template rendering card name:", {
+                      pulledCard_card_name: pulledCard.card_name,
+                      pulledCard_tier_name: pulledCard.tier_name,
+                      cardDisplayName: cardDisplayName,
+                      showCardReveal: showCardReveal,
+                      pulledCard_exists: !!pulledCard
+                    });
+                    return '';
+                  })()}
+                  <p class="text-xl font-semibold mb-2">
+                    {cardDisplayName}
+                  </p>
+                {/if}
 
                 {#if pulledCard.set_name}
                   <p class="text-muted-foreground text-sm">{pulledCard.set_name}</p>

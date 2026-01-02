@@ -6,7 +6,7 @@
   interface CardTier {
     id: string;
     name: string;
-    probability: number;
+    default_probability: number;
     min_value_cents: number;
     max_value_cents: number;
     color_hex: string;
@@ -28,7 +28,7 @@
     <DropdownMenu.Label>Drop Rates</DropdownMenu.Label>
     <DropdownMenu.Separator />
     {#each tiers as tier (tier.id)}
-      {@const percentage = (tier.probability * 100).toFixed(2)}
+      {@const percentage = (tier.default_probability * 100).toFixed(2)}
       {@const minVal = (tier.min_value_cents / 100).toFixed(2)}
       {@const maxVal = (tier.max_value_cents / 100).toFixed(2)}
       <DropdownMenu.Item

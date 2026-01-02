@@ -21,9 +21,11 @@ export interface DrawnCard {
   tier_id: string;
   tier_name: string;
   value_cents: number;
+  card_uuid?: string;
   card_name?: string;
   card_image_url?: string;
   set_name?: string;
+  set_code?: string;
   rarity?: string;
 }
 
@@ -155,6 +157,119 @@ async function generateCardValue(tier: CardTier): Promise<number> {
 }
 
 /**
+ * Fetch a random card from mtg_cards table based on value range
+ * Returns card data with extracted image URL
+ */
+async function fetchRandomCardFromDatabase(
+  minValueCents: number,
+  maxValueCents: number
+): Promise<{
+  id: string;
+  name: string;
+  image_url: string | null;
+  set_name: string | null;
+  set_code: string | null;
+  rarity: string | null;
+} | null> {
+  try {
+    // Fetch a reasonable sample of cards that might match the value range
+    // We'll filter by price in memory since prices are stored as JSONB
+    const { data: cards, error } = await adminClient
+      .from("mtg_cards")
+      .select("id, name, image_uri, set_name, set_code, rarity, prices")
+      .limit(10000); // Limit to prevent memory issues
+
+    if (error) {
+      console.error("Error fetching cards from database:", error);
+      return null;
+    }
+
+    if (!cards || cards.length === 0) {
+      console.warn("No cards found in database");
+      return null;
+    }
+
+    // Filter cards by price range
+    const matchingCards = cards.filter((card: any) => {
+      const prices = card.prices || {};
+      const usdPrice = parseFloat(prices.usd || "0");
+      const usdFoilPrice = parseFloat(prices.usd_foil || "0");
+      const priceCents = Math.max(usdPrice, usdFoilPrice) * 100;
+
+      return priceCents >= minValueCents && priceCents <= maxValueCents;
+    });
+
+    if (matchingCards.length === 0) {
+      // If no cards match the exact range, use cards within a broader range
+      const broaderMin = Math.max(0, minValueCents - minValueCents * 0.5);
+      const broaderMax = maxValueCents + maxValueCents * 0.5;
+      const broaderMatching = cards.filter((card: any) => {
+        const prices = card.prices || {};
+        const usdPrice = parseFloat(prices.usd || "0");
+        const usdFoilPrice = parseFloat(prices.usd_foil || "0");
+        const priceCents = Math.max(usdPrice, usdFoilPrice) * 100;
+        return priceCents >= broaderMin && priceCents <= broaderMax;
+      });
+
+      if (broaderMatching.length === 0) {
+        // Fallback: use any card
+        const randomCard = cards[Math.floor(Math.random() * cards.length)];
+        return extractCardData(randomCard);
+      }
+
+      const randomCard =
+        broaderMatching[Math.floor(Math.random() * broaderMatching.length)];
+      return extractCardData(randomCard);
+    }
+
+    // Select a random card from matching cards
+    const randomCard =
+      matchingCards[Math.floor(Math.random() * matchingCards.length)];
+    return extractCardData(randomCard);
+  } catch (error) {
+    console.error("Error fetching random card:", error);
+    return null;
+  }
+}
+
+/**
+ * Extract card data and image URL from database card record
+ */
+function extractCardData(card: any): {
+  id: string;
+  name: string;
+  image_url: string | null;
+  set_name: string | null;
+  set_code: string | null;
+  rarity: string | null;
+} {
+  // Extract image URL from JSONB image_uri field
+  let imageUrl: string | null = null;
+  if (card.image_uri) {
+    if (typeof card.image_uri === "object") {
+      // image_uri is JSONB with structure: { normal, large, small, etc. }
+      imageUrl =
+        card.image_uri.normal ||
+        card.image_uri.large ||
+        card.image_uri.png ||
+        card.image_uri.small ||
+        null;
+    } else if (typeof card.image_uri === "string") {
+      imageUrl = card.image_uri;
+    }
+  }
+
+  return {
+    id: card.id,
+    name: card.name,
+    image_url: imageUrl,
+    set_name: card.set_name || null,
+    set_code: card.set_code || null,
+    rarity: card.rarity || null,
+  };
+}
+
+/**
  * Draw a card from the available tiers
  *
  * This implements the core card draw algorithm with:
@@ -206,12 +321,22 @@ export async function drawCard(userId: string): Promise<DrawResult> {
     // Generate card value within tier range (with max cap)
     const valueCents = await generateCardValue(selectedTier);
 
+    // Fetch a random card from the database that matches the tier's value range
+    const cardData = await fetchRandomCardFromDatabase(
+      selectedTier.min_value_cents,
+      selectedTier.max_value_cents
+    );
+
     const drawnCard: DrawnCard = {
       tier_id: selectedTier.id,
       tier_name: selectedTier.name,
       value_cents: valueCents,
-      // TODO: Integrate with actual card API (TCGPlayer, etc.)
-      // For now, we just have tier and value
+      card_uuid: cardData?.id,
+      card_name: cardData?.name,
+      card_image_url: cardData?.image_url || undefined,
+      set_name: cardData?.set_name || undefined,
+      set_code: cardData?.set_code || undefined,
+      rarity: cardData?.rarity || undefined,
     };
 
     return {

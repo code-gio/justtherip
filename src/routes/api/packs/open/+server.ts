@@ -105,11 +105,9 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
     const card = drawResult.card;
 
-    // NOTE: The current drawCard() uses generic tier system and doesn't return card_uuid.
-    // This is a temporary placeholder until pack-specific card system is implemented.
-    // For now, we generate a placeholder UUID. The proper solution is to implement
-    // drawCardFromPack() that uses pack_cards table.
-    const placeholderCardUuid = crypto.randomUUID();
+    // Use real card UUID from database if available, otherwise generate placeholder
+    // This ensures we can reference the actual card in mtg_cards table
+    const cardUuid = card.card_uuid || crypto.randomUUID();
 
     // Extract image URL if available
     let cardImageUrl: string | null = null;
@@ -118,14 +116,17 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     }
 
     // Prepare card data for pack_openings.cards_pulled JSONB
+    // Use tier name as fallback for card name if not provided
+    const cardName = card.card_name || `${card.tier_name} Card`;
     const cardData = {
-      card_uuid: placeholderCardUuid,
+      card_uuid: cardUuid,
       tier_id: card.tier_id,
       tier_name: card.tier_name,
       value_cents: card.value_cents,
-      card_name: card.card_name || "Unknown Card",
+      card_name: cardName,
       card_image_url: cardImageUrl,
       set_name: card.set_name || null,
+      set_code: card.set_code || null,
       rarity: card.rarity || null,
     };
 
@@ -148,20 +149,21 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     }
 
     // Add card to user's inventory with all required fields
+    // Use the same cardName we computed earlier for consistency
     const { data: inventoryItem, error: inventoryError } = await adminClient
       .from("user_inventory")
       .insert({
         user_id: user.id,
         pack_opening_id: packOpening?.id,
-        card_uuid: placeholderCardUuid, // Required field
+        card_uuid: cardUuid, // Use real card UUID from database
         game_code: gameCode, // Required field
-        card_name: card.card_name || "Unknown Card",
+        card_name: cardName,
         card_image_url: cardImageUrl,
         card_value_cents: card.value_cents,
         tier_id: card.tier_id,
         tier_name: card.tier_name,
         set_name: card.set_name || null,
-        set_code: null, // Generic system doesn't provide set_code
+        set_code: card.set_code || null,
         rarity: card.rarity || null,
         is_foil: false, // Generic system doesn't track this
         condition: "NM", // Default condition
@@ -180,9 +182,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     }
 
     // Return success with card details
-    // Ensure card_name is always present (use tier name as fallback if card_name is missing)
-    const cardName = card.card_name || `${card.tier_name} Card` || "Unknown Card";
-    
+    // Use the same cardName we computed earlier for consistency
     return json({
       success: true,
       card: {

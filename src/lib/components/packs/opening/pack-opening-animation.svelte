@@ -2,9 +2,10 @@
   import { Button } from "$lib/components/ui/button";
   import { Badge } from "$lib/components/ui/badge";
   import {
-    IconX,
     IconSparkles,
     IconLoader2,
+    IconCoin,
+    IconPackage,
   } from "@tabler/icons-svelte";
 
   interface Card {
@@ -20,13 +21,19 @@
   let {
     card,
     isOpening = $bindable(false),
-    onClose,
     onOpenAnother,
+    onSell,
+    onShip,
+    isSelling = false,
+    isShipping = false,
   }: {
     card: Card | null;
     isOpening?: boolean;
-    onClose: () => void;
     onOpenAnother: () => void;
+    onSell: (cardId: string) => Promise<void>;
+    onShip: (cardId: string) => void;
+    isSelling?: boolean;
+    isShipping?: boolean;
   } = $props();
 
   function getTierGradient(tierName: string): string {
@@ -141,11 +148,38 @@
 
       <!-- Action Buttons -->
       <div class="flex flex-wrap justify-center gap-3 w-full">
-        <Button variant="outline" size="lg" onclick={onClose}>
-          <IconX size={18} class="mr-2" />
-          Close
+        <Button
+          variant="outline"
+          size="lg"
+          onclick={async () => {
+            if (card) {
+              await onSell(card.id);
+            }
+          }}
+          disabled={isSelling || isShipping}
+        >
+          {#if isSelling}
+            <IconLoader2 size={18} class="mr-2 animate-spin" />
+            Selling...
+          {:else}
+            <IconCoin size={18} class="mr-2" />
+            Sell Card
+          {/if}
         </Button>
-        <Button size="lg" onclick={onOpenAnother}>
+        <Button
+          variant="secondary"
+          size="lg"
+          onclick={() => {
+            if (card) {
+              onShip(card.id);
+            }
+          }}
+          disabled={isSelling || isShipping}
+        >
+          <IconPackage size={18} class="mr-2" />
+          Ship Card
+        </Button>
+        <Button size="lg" onclick={onOpenAnother} disabled={isSelling || isShipping}>
           <IconSparkles size={18} class="mr-2" />
           Open Another
         </Button>

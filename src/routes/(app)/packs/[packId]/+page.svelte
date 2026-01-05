@@ -5,19 +5,23 @@
     IconSparkles,
     IconLoader2,
     IconCoin,
-    IconX,
     IconPackage,
     IconArrowLeft,
   } from "@tabler/icons-svelte";
   import { invalidateAll, goto } from "$app/navigation";
   import type { PageData } from "./$types";
+  import PackOpeningAnimation from "$lib/components/packs/opening/pack-opening-animation.svelte";
+  import ShipCardDialog from "$lib/components/inventory/ship-card-dialog.svelte";
 
   let { data }: { data: PageData } = $props();
   let { balance, pack } = $derived(data);
 
   let isOpening = $state(false);
   let pulledCard = $state<any>(null);
-  let showCardReveal = $state(false);
+  let isSelling = $state(false);
+  let isShipping = $state(false);
+  let shipDialogOpen = $state(false);
+  let cardToShip = $state<any>(null);
 
   // TRACE: Log whenever pulledCard changes
   $effect(() => {
@@ -40,7 +44,6 @@
 
     isOpening = true;
     pulledCard = null;
-    showCardReveal = false;
 
     try {
       const response = await fetch("/api/packs/open", {
@@ -77,7 +80,6 @@
         fullPulledCard: JSON.stringify(pulledCard, null, 2)
       });
 
-      showCardReveal = true;
       await invalidateAll();
 
       toast.success(
@@ -93,21 +95,90 @@
     }
   }
 
-  function closeReveal() {
-    showCardReveal = false;
-    pulledCard = null;
+  async function sellCard(cardId: string) {
+    try {
+      isSelling = true;
+
+      const response = await fetch("/api/inventory/sell", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ card_id: cardId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to sell card");
+      }
+
+      const result = await response.json();
+
+      toast.success(
+        `Sold for ${result.rips_credited.toFixed(2)} Rips!`
+      );
+
+      pulledCard = null;
+      await invalidateAll();
+    } catch (error) {
+      console.error("Error selling card:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to sell card"
+      );
+    } finally {
+      isSelling = false;
+    }
   }
 
-  function getTierGradient(tierName: string): string {
-    const gradients: Record<string, string> = {
-      Trash: "from-slate-400 to-slate-600",
-      Low: "from-emerald-400 to-emerald-600",
-      Mid: "from-blue-400 to-blue-600",
-      High: "from-purple-400 to-purple-600",
-      Chase: "from-amber-400 to-orange-500",
-      "Ultra Chase": "from-rose-400 via-pink-500 to-purple-600",
-    };
-    return gradients[tierName] || "from-gray-400 to-gray-600";
+  function openShipDialog(cardId: string) {
+    if (pulledCard && pulledCard.id === cardId) {
+      cardToShip = pulledCard;
+      shipDialogOpen = true;
+    }
+  }
+
+  async function shipCard(cardId: string, shippingAddressId?: string) {
+    try {
+      isShipping = true;
+
+      const response = await fetch("/api/inventory/ship", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          card_id: cardId,
+          shipping_address_id: shippingAddressId,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to ship card");
+      }
+
+      const result = await response.json();
+
+      toast.success("Shipment request created successfully!");
+
+      pulledCard = null;
+      shipDialogOpen = false;
+      cardToShip = null;
+      await invalidateAll();
+    } catch (error) {
+      console.error("Error shipping card:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to ship card"
+      );
+      throw error;
+    } finally {
+      isShipping = false;
+    }
+  }
+
+  function closeShipDialog() {
+    shipDialogOpen = false;
+    cardToShip = null;
   }
 </script>
 
@@ -135,107 +206,15 @@
       </Button>
     </div>
 
-    {#if showCardReveal && pulledCard}
-      <!-- Card Reveal Overlay -->
-      <div
-        class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-      >
-        <div
-          class="animate-in fade-in zoom-in-95 duration-500 flex flex-col items-center max-w-md w-full"
-        >
-          <div class="relative w-full">
-            <!-- Glow Effect -->
-            <div
-              class="absolute inset-0 bg-gradient-to-r {getTierGradient(
-                pulledCard.tier_name
-              )} rounded-3xl blur-3xl opacity-60 scale-110 animate-pulse"
-            ></div>
-
-            <!-- Card -->
-            <div
-              class="relative aspect-[3/4] rounded-3xl bg-gradient-to-br {getTierGradient(
-                pulledCard.tier_name
-              )} p-1 shadow-2xl"
-            >
-              <div
-                class="w-full h-full rounded-[22px] bg-card flex flex-col items-center justify-center p-8 text-center"
-              >
-                <div
-                  class="px-3 py-1 rounded-full text-xs font-bold mb-4 bg-primary/10 text-primary border border-primary/20"
-                >
-                  {pulledCard.tier_name}
-                </div>
-
-                {#if pulledCard.card_image_url}
-                  <img
-                    src={pulledCard.card_image_url}
-                    alt={pulledCard.card_name || "Card"}
-                    class="w-32 h-44 object-contain mb-4 rounded-lg"
-                    loading="eager"
-                  />
-                {/if}
-
-                <div
-                  class="text-5xl sm:text-6xl font-black mb-4 bg-gradient-to-br {getTierGradient(
-                    pulledCard.tier_name
-                  )} bg-clip-text text-transparent"
-                >
-                  ${((pulledCard.value_cents || 0) / 100).toFixed(2)}
-                </div>
-
-                {#if pulledCard}
-                  <!-- TRACE: Log card name before display -->
-                  {@const cardDisplayName = pulledCard.card_name || `${pulledCard.tier_name} Card`}
-                  {(() => {
-                    console.log("[TRACE] Template rendering card name:", {
-                      pulledCard_card_name: pulledCard.card_name,
-                      pulledCard_tier_name: pulledCard.tier_name,
-                      cardDisplayName: cardDisplayName,
-                      showCardReveal: showCardReveal,
-                      pulledCard_exists: !!pulledCard
-                    });
-                    return '';
-                  })()}
-                  <p class="text-xl font-semibold mb-2">
-                    {cardDisplayName}
-                  </p>
-                {/if}
-
-                {#if pulledCard.set_name}
-                  <p class="text-muted-foreground text-sm">{pulledCard.set_name}</p>
-                {/if}
-
-                {#if pulledCard.rarity}
-                  <p class="text-xs text-muted-foreground mt-2">{pulledCard.rarity}</p>
-                {/if}
-              </div>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap justify-center gap-3 mt-8">
-            <Button variant="outline" size="lg" onclick={closeReveal}>
-              <IconX size={18} class="mr-2" />
-              Close
-            </Button>
-            <Button
-              size="lg"
-              onclick={openPack}
-              disabled={isOpening || balance < pack.rip_cost}
-            >
-              <IconSparkles size={18} class="mr-2" />
-              Open Another
-            </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              onclick={() => goto("/inventory")}
-            >
-              Inventory
-            </Button>
-          </div>
-        </div>
-      </div>
-    {/if}
+    <PackOpeningAnimation
+      bind:isOpening
+      card={pulledCard}
+      onOpenAnother={openPack}
+      onSell={sellCard}
+      onShip={openShipDialog}
+      {isSelling}
+      {isShipping}
+    />
 
     <!-- Main Content -->
     <div class="px-6 pb-12 max-w-7xl mx-auto">
@@ -378,4 +357,13 @@
       {/if}
     </div>
   </div>
+{/if}
+
+{#if cardToShip}
+  <ShipCardDialog
+    bind:open={shipDialogOpen}
+    card={cardToShip}
+    onShip={shipCard}
+    onClose={closeShipDialog}
+  />
 {/if}

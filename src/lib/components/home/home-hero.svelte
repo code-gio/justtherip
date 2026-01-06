@@ -1,164 +1,56 @@
 <script lang="ts">
-  import { IconFlame, IconSparkles, IconDiamond } from "@tabler/icons-svelte";
 </script>
 
 <section class="hero">
-  <div class="hero-grid">
+  <div class="hero-container pt-14">
     <!-- Left Content -->
     <div class="hero-content">
       <h1 class="hero-title">
-        <span class="light">Rip Packs For</span>
-        <span class="accent">Real Cards</span>
-        <span class="light">From Your</span>
-        <span class="bold">Favorite TCGs.</span>
+        <span class="line-white text-4xl">RIP PACKS FOR REAL</span>
+        <span class="line-white text-4xl">CARDS FROM YOUR</span>
+        <span class="line-white text-7xl">FAVORITE TCGs.</span>
       </h1>
 
-      <div class="hero-stats">
+      <div class="hero-stats px-4 pb-3 mb-10">
         <div class="stat">
-          <span class="stat-number">50K+</span>
-          <span class="stat-label">Packs<br />Ripped</span>
+          <p class="stat-number">50K+</p>
+          <p class="stat-label">Packs Ripped</p>
         </div>
         <div class="stat-divider"></div>
         <div class="stat">
-          <span class="stat-number">$2M+</span>
-          <span class="stat-label">Cards<br />Shipped</span>
+          <p class="stat-number">$2M+</p>
+          <p class="stat-label">Cards Shipped</p>
         </div>
       </div>
 
       <div class="hero-cta">
-        <a href="/sign-up" class="btn btn-primary"> Start Ripping </a>
-        <a href="/sign-in" class="btn btn-outline"> Log In </a>
+        <a href="/sign-up" class="btn btn-primary">START RIPPING</a>
+        <a href="/sign-in" class="btn btn-outline">LOG IN</a>
       </div>
     </div>
 
-    <!-- Right Side - Floating Cards -->
+    <!-- Right Side - Single Image -->
     <div class="hero-visual">
-      <!-- Pack Card 1 - Main -->
-      <div class="pack-card card-1">
-        <div class="card-badge">
-          <IconFlame size={14} />
-          HOT
-        </div>
-        <div class="card-image pokemon-pack"></div>
-        <div class="card-info">
-          <span class="card-name">Prismatic Evolution</span>
-          <div class="card-price">
-            <IconDiamond size={16} />
-            <span>250 Jewels</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pack Card 2 -->
-      <div class="pack-card card-2">
-        <div class="card-badge mtg-badge">
-          <IconSparkles size={14} />
-          NEW
-        </div>
-        <div class="card-image mtg-pack"></div>
-        <div class="card-info">
-          <span class="card-name">Foundations</span>
-          <div class="card-price">
-            <IconDiamond size={16} />
-            <span>180 Jewels</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pack Card 3 -->
-      <div class="pack-card card-3">
-        <div class="card-image pokemon-pack-2"></div>
-        <div class="card-info">
-          <span class="card-name">Surging Sparks</span>
-          <div class="card-price">
-            <IconDiamond size={16} />
-            <span>200 Jewels</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Annotations -->
-      <div class="annotation annotation-1">
-        <svg class="arrow arrow-1" viewBox="0 0 100 60" fill="none">
-          <path
-            d="M5 55 Q 30 20, 90 15"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-dasharray="4 4"
-          />
-          <path
-            d="M85 5 L 92 15 L 80 18"
-            stroke="currentColor"
-            stroke-width="2"
-            fill="none"
-          />
-        </svg>
-        <span>Real physical cards<br />shipped to you</span>
-      </div>
-
-      <div class="annotation annotation-2">
-        <svg class="arrow arrow-2" viewBox="0 0 80 80" fill="none">
-          <path
-            d="M70 5 Q 40 30, 15 70"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-dasharray="4 4"
-          />
-          <path
-            d="M5 65 L 15 72 L 20 60"
-            stroke="currentColor"
-            stroke-width="2"
-            fill="none"
-          />
-        </svg>
-        <span>Odds shown<br />before you rip</span>
-      </div>
-
-      <div class="annotation annotation-3">
-        <span>Instant digital<br />reveals</span>
-        <svg class="arrow arrow-3" viewBox="0 0 60 60" fill="none">
-          <path
-            d="M5 10 Q 25 40, 55 50"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-dasharray="4 4"
-          />
-          <path
-            d="M50 42 L 57 52 L 45 52"
-            stroke="currentColor"
-            stroke-width="2"
-            fill="none"
-          />
-        </svg>
-      </div>
-    </div>
-  </div>
-
-  <!-- Trust Logos -->
-  <div class="trust-section">
-    <span class="trust-label">Trusted by collectors worldwide</span>
-    <div class="trust-logos">
-      <div class="trust-logo">TCGPlayer</div>
-      <div class="trust-logo">eBay</div>
-      <div class="trust-logo">PSA</div>
-      <div class="trust-logo">CGC</div>
+      <img src="/landing/hero-img.svg" alt="TCG Cards" class="hero-image" />
     </div>
   </div>
 </section>
 
 <style>
   .hero {
-    min-height: 100vh;
-    padding: 6rem 2rem 4rem;
+    position: relative;
+    padding: 2rem 2rem 4rem;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    min-height: 80vh;
   }
 
-  .hero-grid {
-    flex: 1;
+  .hero-container {
+    position: relative;
+    z-index: 1;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4rem;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 2rem;
     align-items: center;
     max-width: 1400px;
     margin: 0 auto;
@@ -166,14 +58,15 @@
   }
 
   @media (max-width: 1024px) {
-    .hero-grid {
+    .hero-container {
       grid-template-columns: 1fr;
       text-align: center;
     }
   }
 
+  /* Hero Content - Left Side */
   .hero-content {
-    max-width: 600px;
+    max-width: 550px;
   }
 
   @media (max-width: 1024px) {
@@ -184,69 +77,74 @@
   }
 
   .hero-title {
-    font-family: var(--font-serif);
-    font-size: clamp(3rem, 6vw, 5rem);
-    font-weight: 400;
+    font-family: var(--font-display, var(--font-sans));
+    font-size: clamp(2rem, 4.5vw, 3.5rem);
+    font-weight: 700;
     line-height: 1.05;
-    margin: 0 0 3rem;
+    margin: 0 0 2rem;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
   }
 
-  .hero-title .light {
+  .hero-title .line-white {
     display: block;
-    color: var(--text-gray);
+    color: var(--text-white);
   }
 
-  .hero-title .accent {
+  .hero-title .line-gradient {
     display: block;
-    font-style: italic;
-    color: var(--gold);
+    background: linear-gradient(90deg, #a855f7 0%, #8b5cf6 30%, #6366f1 60%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
-  .hero-title .bold {
-    display: block;
-  }
-
+  /* Stats Box */
   .hero-stats {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 2rem;
-    margin-bottom: 2.5rem;
+    gap: 1.25rem;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
   }
 
   @media (max-width: 1024px) {
     .hero-stats {
-      justify-content: center;
+      margin-left: auto;
+      margin-right: auto;
     }
   }
 
-  .stat {
-    display: flex;
-    align-items: baseline;
-    gap: 0.75rem;
-  }
+  
 
   .stat-number {
-    font-family: var(--font-serif);
-    font-size: 2.5rem;
-    font-weight: 400;
+    font-family: var(--font-display, var(--font-sans));
+    font-size: 48px;
+    font-weight: 700;
     color: var(--text-white);
+    letter-spacing: -0.02em;
   }
 
   .stat-label {
-    font-size: 0.8125rem;
-    color: var(--text-muted);
-    line-height: 1.3;
+    font-size: 20px;
+    font-weight: 600;
+    color: white;
+    text-transform: capitalize;
   }
 
   .stat-divider {
     width: 1px;
-    height: 40px;
-    background: var(--border);
+    height: 5rem;
+    background-color: #6829F9;
   }
 
+  /* CTA Buttons */
   .hero-cta {
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
   }
 
   @media (max-width: 1024px) {
@@ -255,248 +153,67 @@
     }
   }
 
-  /* Hero Visual */
-  .hero-visual {
-    position: relative;
-    height: 600px;
-  }
-
-  @media (max-width: 1024px) {
-    .hero-visual {
-      display: none;
-    }
-  }
-
-  .pack-card {
-    position: absolute;
-    width: 220px;
-    background: var(--bg-card);
-    border-radius: 16px;
-    padding: 12px;
-    border: 1px solid var(--border);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    transition: transform 0.4s ease;
-  }
-
-  .pack-card:hover {
-    transform: scale(1.05) !important;
-  }
-
-  .card-1 {
-    top: 15%;
-    left: 10%;
-    transform: rotate(-8deg);
-    z-index: 3;
-  }
-
-  .card-2 {
-    top: 5%;
-    right: 5%;
-    transform: rotate(12deg);
-    z-index: 2;
-  }
-
-  .card-3 {
-    bottom: 10%;
-    left: 35%;
-    transform: rotate(-3deg);
-    z-index: 1;
-  }
-
-  .card-badge {
-    position: absolute;
-    top: -8px;
-    left: 12px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    background: #ef4444;
-    color: white;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-radius: 100px;
-  }
-
-  .card-badge.mtg-badge {
-    background: #8b5cf6;
-  }
-
-  .card-image {
-    width: 100%;
-    aspect-ratio: 3/4;
-    border-radius: 10px;
-    margin-bottom: 12px;
-  }
-
-  .pokemon-pack {
-    background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 50%, #dc2626 100%);
-  }
-
-  .pokemon-pack-2 {
-    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #1d4ed8 100%);
-  }
-
-  .mtg-pack {
-    background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #6d28d9 100%);
-  }
-
-  .card-info {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .card-name {
-    font-weight: 600;
-    font-size: 0.9375rem;
-  }
-
-  .card-price {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--gold);
-    font-size: 0.875rem;
-    font-weight: 600;
-  }
-
-  /* Annotations */
-  .annotation {
-    position: absolute;
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-size: 0.9375rem;
-    color: var(--text-gray);
-    line-height: 1.4;
-  }
-
-  .arrow {
-    color: var(--text-muted);
-  }
-
-  .annotation-1 {
-    bottom: 25%;
-    left: -5%;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .arrow-1 {
-    width: 100px;
-    height: 60px;
-    margin-bottom: 8px;
-  }
-
-  .annotation-2 {
-    top: 0;
-    right: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    text-align: right;
-  }
-
-  .arrow-2 {
-    width: 80px;
-    height: 80px;
-    margin-top: 8px;
-  }
-
-  .annotation-3 {
-    bottom: 5%;
-    right: 10%;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .arrow-3 {
-    width: 60px;
-    height: 60px;
-  }
-
-  /* Trust Section */
-  .trust-section {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 2rem;
-    padding-top: 4rem;
-    border-top: 1px solid var(--border);
-    margin-top: auto;
-  }
-
-  .trust-label {
-    font-size: 0.8125rem;
-    color: var(--text-muted);
-  }
-
-  .trust-logos {
-    display: flex;
-    align-items: center;
-    gap: 2.5rem;
-  }
-
-  .trust-logo {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    letter-spacing: -0.02em;
-    opacity: 0.6;
-    transition: opacity 0.2s;
-  }
-
-  .trust-logo:hover {
-    opacity: 1;
-  }
-
-  @media (max-width: 768px) {
-    .trust-section {
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-  }
-
-  /* Buttons */
   .btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    padding: 1rem 2rem;
+    padding: 0.75rem 1.5rem;
     font-family: var(--font-sans);
-    font-size: 0.9375rem;
+    font-size: 0.8125rem;
     font-weight: 600;
-    border-radius: 100px;
+    border-radius: 6px;
     text-decoration: none;
-    transition: all 0.25s ease;
+    transition: all 0.2s ease;
     cursor: pointer;
     border: none;
   }
 
   .btn-primary {
-    background: var(--gold);
-    color: var(--bg-dark);
+    background-color: #6829F9;
+    color: white;
+    border-radius: 100px;
   }
 
   .btn-primary:hover {
-    background: var(--gold-light);
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px var(--gold-glow);
+    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.35);
   }
 
   .btn-outline {
-    background: transparent;
+    background: rgba(255, 255, 255, 0.05);
     color: var(--text-white);
-    border: 1px solid var(--border);
+    border: 1px solid #6829F9;
+    border-radius: 100px;
   }
 
   .btn-outline:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  /* Hero Visual - Right Side */
+  .hero-visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @media (max-width: 1024px) {
+    .hero-visual {
+      margin-top: 2rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .hero-visual {
+      display: none;
+    }
+  }
+
+  .hero-image {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
   }
 </style>
-

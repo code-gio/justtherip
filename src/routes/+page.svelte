@@ -21,15 +21,11 @@
    */
 
   import {
-    HomeHeader,
     HomeHero,
+    HomeCollectors,
     HomePacks,
-    HomeHowItWorks,
-    HomeWhy,
-    HomeGames,
-    HomeFeatures,
-    HomeCta,
-    HomeFooter,
+    HomeThreeSteps,
+    HomeBuildMoment,
   } from "$lib/components/home";
 </script>
 
@@ -47,19 +43,35 @@
 </svelte:head>
 
 <div class="landing-page dark">
-  <HomeHeader />
-  <HomeHero />
-  <HomePacks />
-  <HomeHowItWorks />
-  <HomeWhy />
-  <HomeGames />
-  <HomeFeatures />
-  <HomeCta />
-  <HomeFooter />
+  <!-- Main hero section with shared background for Hero, Collectors, and Packs -->
+  <div class="hero-section-bg">
+      <div class="purple-vector">
+        <HomeHero />
+        <HomeCollectors />
+
+      </div>
+    <HomePacks />
+  <!-- Three Steps Section -->
+  <HomeThreeSteps />
+
+  <!-- Build for the Moment Section -->
+  <HomeBuildMoment />
+  </div>
+
+  <!-- Future sections will go here with different backgrounds -->
 </div>
 
 <style>
+  @font-face {
+    font-family: "Organetto";
+    src: url("/fonts/Organetto-Bold.otf") format("opentype");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+  }
+
   .landing-page {
+    --font-display: "Organetto", system-ui, sans-serif;
     --font-serif: "Instrument Serif", Georgia, serif;
     --font-sans: "Inter", system-ui, sans-serif;
 
@@ -81,5 +93,27 @@
     background: var(--bg-dark);
     color: var(--text-white);
     overflow-x: hidden;
+  }
+
+  /* Shared background container for Hero, Collectors, and Packs sections */
+  .hero-section-bg {
+    position: relative;
+    /* Placeholder background - replace with your image */
+    /* background-color: var(--bg-dark); */
+    /* Example: background-image: url('/your-background-image.jpg'); */
+    background-image: url("/landing/dark-pink-and-purple.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+ 
+
+  /* Purple vector as background for Hero + Collectors */
+  .purple-vector {
+    background-image: url("/landing/purple-vec-home.svg");
+    background-size: 100% auto;
+    background-position: center 10dvh;
+    background-repeat: no-repeat;
   }
 </style>

@@ -2,7 +2,7 @@
 </script>
 
 <section class="hero">
-  <div class="hero-container pt-14">
+  <div class="hero-container" style="padding-top: calc(102px + 3rem);">
     <!-- Left Content -->
     <div class="hero-content">
       <h1 class="hero-title">

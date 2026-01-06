@@ -169,19 +169,19 @@
     width: 100%;
     height: 100%;
     z-index: 0;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    /* backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px); */
     transition: all 0.3s ease;
   }
 
   /* Pokémon gradient - bottom to top, fades to transparent */
   .pack-card.pokemon .pack-card-bg {
-    background: linear-gradient(0deg, rgba(124, 58, 237, 0.6) 0%, rgba(91, 33, 182, 0.4) 40%, transparent 100%);
+    background: linear-gradient(0deg, rgba(124, 58, 237, 0.6) 0%, rgba(91, 33, 182, 0.4) 20%, transparent 55%);
   }
 
   /* Magic gradient - bottom to top, fades to transparent */
   .pack-card.magic .pack-card-bg {
-    background: linear-gradient(0deg, rgba(13, 148, 136, 0.6) 0%, rgba(15, 118, 110, 0.4) 40%, transparent 100%);
+    background: linear-gradient(0deg, rgba(13, 148, 136, 0.6) 0%, rgba(15, 118, 110, 0.4) 40%, transparent 55%);
   }
 
   /* Hover: Increase gradient brightness */

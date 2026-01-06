@@ -26,7 +26,12 @@
     HomePacks,
     HomeThreeSteps,
     HomeBuildMoment,
+    HomeGames,
+    HomeFooter,
+    HomeFeaturedPacks,
   } from "$lib/components/home";
+  import HomeFeatures from "$lib/components/home/home-features.svelte";
+  import NavLanding from "$lib/components/nav/nav-landing.svelte";
 </script>
 
 <svelte:head>
@@ -41,6 +46,7 @@
     rel="stylesheet"
   />
 </svelte:head>
+<NavLanding />
 
 <div class="landing-page dark">
   <!-- Main hero section with shared background for Hero, Collectors, and Packs -->
@@ -48,15 +54,22 @@
       <div class="purple-vector">
         <HomeHero />
         <HomeCollectors />
-
+        
       </div>
-    <HomePacks />
-  <!-- Three Steps Section -->
-  <HomeThreeSteps />
-
-  <!-- Build for the Moment Section -->
-  <HomeBuildMoment />
+      <HomePacks />
+      <!-- Three Steps Section -->
+      <HomeThreeSteps />
+      
+      <!-- Build for the Moment Section -->
+      <HomeBuildMoment />
+      <!-- Games Section -->
+      <HomeGames />
+      <HomeFeatures />
+      <HomeFeaturedPacks />
+      <!-- Footer -->
+      <HomeFooter />
   </div>
+
 
   <!-- Future sections will go here with different backgrounds -->
 </div>
@@ -101,7 +114,7 @@
     /* Placeholder background - replace with your image */
     /* background-color: var(--bg-dark); */
     /* Example: background-image: url('/your-background-image.jpg'); */
-    background-image: url("/landing/dark-pink-and-purple.png");
+    background-image: url("/landing/dark-pink-and-purple.svg");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -112,8 +125,8 @@
   /* Purple vector as background for Hero + Collectors */
   .purple-vector {
     background-image: url("/landing/purple-vec-home.svg");
-    background-size: 100% auto;
-    background-position: center 10dvh;
+    background-size: cover;
+    background-position: center;
     background-repeat: no-repeat;
   }
 </style>

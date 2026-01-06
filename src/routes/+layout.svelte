@@ -5,6 +5,7 @@
   import { onMount } from "svelte";
   import { ModeWatcher } from "mode-watcher";
   import { Toaster } from "$lib/components/ui/sonner";
+  import NavLanding  from "$lib/components/nav/nav-landing.svelte";
   let { data, children } = $props();
   let { supabase, session } = $derived(data);
 
@@ -58,6 +59,7 @@
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
+<!-- <NavLanding /> -->
 <div class="h-dvh">
   <Toaster />
   <ModeWatcher />

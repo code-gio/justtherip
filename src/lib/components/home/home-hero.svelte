@@ -2,16 +2,16 @@
 </script>
 
 <section class="hero">
-  <div class="hero-container" style="padding-top: calc(102px + 3rem);">
+  <div class="hero-container" style="padding-top: calc(140px + 3rem);">
     <!-- Left Content -->
     <div class="hero-content">
       <h1 class="hero-title">
-        <span class="line-white text-4xl">RIP PACKS FOR REAL</span>
-        <span class="line-white text-4xl">CARDS FROM YOUR</span>
-        <span class="line-white text-7xl">FAVORITE TCGs.</span>
+        <span class="line-white text-[40px]">RIP PACKS FOR REAL</span>
+        <span class="line-white text-[40px]">CARDS FROM YOUR</span>
+        <span class="line-white text-[71px]">FAVORITE TCGs.</span>
       </h1>
 
-      <div class="hero-stats px-4 pb-3 mb-10">
+      <div class="hero-stats px-4 pb-3 mb-10 mt-2  ">
         <div class="stat">
           <p class="stat-number">50K+</p>
           <p class="stat-label">Packs Ripped</p>
@@ -45,14 +45,21 @@
     min-height: 80vh;
   }
 
+  @media (max-width: 768px) {
+    .hero {
+      padding: 2rem 1rem 3rem;
+      min-height: 60vh;
+    }
+  }
+
   .hero-container {
     position: relative;
     z-index: 1;
     display: grid;
-    grid-template-columns: 1fr 1.2fr;
-    gap: 2rem;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 0rem;
     align-items: center;
-    max-width: 1400px;
+    max-width: 1300px;
     margin: 0 auto;
     width: 100%;
   }
@@ -77,8 +84,7 @@
   }
 
   .hero-title {
-    font-family: var(--font-display, var(--font-sans));
-    font-size: clamp(2rem, 4.5vw, 3.5rem);
+    font-size: 4px;
     font-weight: 700;
     line-height: 1.05;
     margin: 0 0 2rem;
@@ -89,6 +95,26 @@
   .hero-title .line-white {
     display: block;
     color: var(--text-white);
+  }
+
+  @media (max-width: 768px) {
+    .hero-title .line-white.text-\[40px\] {
+      font-size: 28px !important;
+    }
+    
+    .hero-title .line-white.text-\[71px\] {
+      font-size: 48px !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .hero-title .line-white.text-\[40px\] {
+      font-size: 24px !important;
+    }
+    
+    .hero-title .line-white.text-\[71px\] {
+      font-size: 36px !important;
+    }
   }
 
   .hero-title .line-gradient {
@@ -103,12 +129,14 @@
   .hero-stats {
     display: inline-flex;
     align-items: center;
-    gap: 1.25rem;
+    justify-content: space-between;
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 12px;
+    width: 400px;
+    max-width: 100%;
   }
 
   @media (max-width: 1024px) {
@@ -118,21 +146,60 @@
     }
   }
 
-  
+  @media (max-width: 480px) {
+    .hero-stats {
+      width: 100%;
+      max-width: 350px;
+      padding: 0.75rem 1rem;
+    }
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: start;
+    gap: -3.5rem;
+   
+  }
 
   .stat-number {
-    font-family: var(--font-display, var(--font-sans));
     font-size: 48px;
     font-weight: 700;
     color: var(--text-white);
-    letter-spacing: -0.02em;
+    margin-bottom: -1rem;
+    /* letter-spacing: -0.02em; */
+  }
+
+  @media (max-width: 768px) {
+    .stat-number {
+      font-size: 36px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stat-number {
+      font-size: 28px;
+    }
   }
 
   .stat-label {
-    font-size: 20px;
-    font-weight: 600;
+    font-size: 24px;
+    font-weight: 500;
     color: white;
     text-transform: capitalize;
+  }
+
+  @media (max-width: 768px) {
+    .stat-label {
+      font-size: 18px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stat-label {
+      font-size: 16px;
+    }
   }
 
   .stat-divider {
@@ -141,10 +208,23 @@
     background-color: #6829F9;
   }
 
+  @media (max-width: 768px) {
+    .stat-divider {
+      height: 4rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stat-divider {
+      height: 3rem;
+    }
+  }
+
   /* CTA Buttons */
   .hero-cta {
     display: flex;
     gap: 0.75rem;
+    flex-wrap: wrap;
   }
 
   @media (max-width: 1024px) {
@@ -160,13 +240,20 @@
     gap: 0.5rem;
     padding: 0.75rem 1.5rem;
     font-family: var(--font-sans);
-    font-size: 0.8125rem;
+    font-size: 18px;
     font-weight: 600;
     border-radius: 6px;
     text-decoration: none;
     transition: all 0.2s ease;
     cursor: pointer;
     border: none;
+  }
+
+  @media (max-width: 480px) {
+    .btn {
+      font-size: 16px;
+      padding: 0.625rem 1.25rem;
+    }
   }
 
   .btn-primary {

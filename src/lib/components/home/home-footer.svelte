@@ -145,8 +145,8 @@
   }
 
   .footer-link {
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
     color: #ffffff !important;
     text-decoration: none;
     letter-spacing: 0.05em;

@@ -22,13 +22,13 @@
 
   @media (max-width: 768px) {
     .featured-packs-section {
-      padding: 4rem 1.5rem;
-      margin: 2rem 1rem;
+      padding: 4rem 1rem;
     }
   }
 
   .container {
     max-width: 950px;
+    width: 100%;
     background: linear-gradient(
       0deg,
       rgba(138, 56, 245, 0.9) 0%,
@@ -37,15 +37,28 @@
       transparent 95%
     );
     border-radius: 24px;
-    margin: 4rem 2rem;
     position: relative;
     overflow: hidden;
-    width: 950px;
     display: flex;
     justify-content: center;
     align-items: center;
     margin: 0 auto;
     padding: 2rem;
+  }
+
+  @media (max-width: 1024px) {
+    .container {
+      max-width: 90%;
+      padding: 2rem 1.5rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .container {
+      max-width: 95%;
+      padding: 1.5rem 1rem;
+      border-radius: 16px;
+    }
   }
 
   .content {
@@ -60,20 +73,31 @@
   .section-tag {
     display: block;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.15em;
     color: rgba(255, 255, 255, 0.9);
     text-transform: uppercase;
   }
 
   .section-title {
-    font-family: var(--font-display, var(--font-sans));
     font-size: 48px;
     font-weight: 700;
     color: var(--text-white);
     margin: 0;
     text-transform: uppercase;
     line-height: 1.1;
+  }
+
+  @media (max-width: 768px) {
+    .section-title {
+      font-size: 36px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .section-title {
+      font-size: 28px;
+    }
   }
 
   .section-description {
@@ -86,7 +110,7 @@
 
   @media (max-width: 768px) {
     .section-description {
-      font-size: 0.9375rem;
+      font-size: 14px;
     }
   }
 

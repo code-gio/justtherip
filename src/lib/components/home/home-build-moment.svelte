@@ -103,8 +103,8 @@
 
   .section-tag {
     display: block;
-    font-size: 0.6875rem;
-    font-weight: 500;
+    font-size: 12px;
+    font-weight: 700;
     letter-spacing: 0.15em;
     color: var(--text-white);
     margin-bottom: 1rem;
@@ -112,7 +112,6 @@
   }
 
   .section-title {
-    font-family: var(--font-display, var(--font-sans));
     font-size: 48px;
     font-weight: 700;
     color: var(--text-white);
@@ -122,10 +121,11 @@
   }
 
   .section-description {
-    font-size: 1rem;
-    color: var(--text-gray);
+    font-size: 16px;
+    color: white;
     line-height: 1.6;
     margin-bottom: 2.5rem;
+    font-weight: 500;
   }
 
   .features-list {
@@ -147,7 +147,8 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-    font-size: 1rem;
+    font-size: 16px;
+    font-weight: 500;
     color: var(--text-white);
   }
 
@@ -178,21 +179,29 @@
     max-width: 600px;
   }
 
+  @media (max-width: 1024px) {
+    .steps-box {
+      margin: 0 auto;
+      text-align: center;
+    }
+  }
+
   .step-row {
     display: flex;
     align-items: flex-start;
     gap: 1.5rem;
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 1024px) {
     .step-row {
       justify-content: center;
+      align-items: center;
     }
   }
 
   .step-icon {
     flex-shrink: 0;
-    margin-top: 0.8rem;
+    margin-top: 0rem;
   }
 
   .step-icon img {
@@ -214,7 +223,6 @@
   }
 
   .step-text {
-    font-family: var(--font-display, var(--font-sans));
     font-size: 48px;
     font-weight: 700;
     color: var(--text-white);
@@ -223,11 +231,16 @@
     margin-left: 1rem;
   }
 
+  @media (max-width: 1024px) {
+    .step-text {
+      margin-left: 0;
+      text-align: center;
+    }
+  }
+
   @media (max-width: 768px) {
     .step-text {
       font-size: 24px;
-      margin-left: 0;
-      text-align: center;
     }
   }
 

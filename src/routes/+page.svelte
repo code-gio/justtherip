@@ -41,7 +41,7 @@
     crossorigin="anonymous"
   />
   <link
-    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
 </svelte:head>
@@ -49,42 +49,33 @@
 <div class="landing-page dark">
   <!-- Main hero section with shared background for Hero, Collectors, and Packs -->
   <div class="hero-section-bg">
-      <div class="purple-vector">
-        <HomeHero />
-        <HomeCollectors />
-        
-      </div>
-      <HomePacks />
-      <!-- Three Steps Section -->
-      <HomeThreeSteps />
-      
-      <!-- Build for the Moment Section -->
-      <HomeBuildMoment />
-      <!-- Games Section -->
-      <HomeGames />
-      <HomeFeatures />
-      <HomeFeaturedPacks />
-      <!-- Footer -->
-      <HomeFooter />
-  </div>
+    <div class="purple-vector">
+      <HomeHero />
+      <HomeCollectors />
+    </div>
+    <HomePacks />
+    <!-- Three Steps Section -->
+    <HomeThreeSteps />
 
+    <!-- Build for the Moment Section -->
+    <HomeBuildMoment />
+    <!-- Games Section -->
+    <HomeGames />
+    <HomeFeatures />
+    <HomeFeaturedPacks />
+    <!-- Footer -->
+    <HomeFooter />
+  </div>
 
   <!-- Future sections will go here with different backgrounds -->
 </div>
 
 <style>
-  @font-face {
-    font-family: "Organetto";
-    src: url("/fonts/Organetto-Bold.otf") format("opentype");
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
-  }
 
   .landing-page {
     --font-display: "Organetto", system-ui, sans-serif;
     --font-serif: "Instrument Serif", Georgia, serif;
-    --font-sans: "Inter", system-ui, sans-serif;
+    --font-sans: "League Spartan", system-ui, sans-serif;
 
     --gold: #d4a853;
     --gold-light: #e8c97a;
@@ -100,7 +91,7 @@
 
     --border: rgba(255, 255, 255, 0.08);
 
-    font-family: var(--font-sans);
+    font-family: "League Spartan", system-ui, sans-serif;
     background: var(--bg-dark);
     color: var(--text-white);
     overflow-x: hidden;
@@ -117,8 +108,6 @@
     background-position: center;
     background-repeat: no-repeat;
   }
-
- 
 
   /* Purple vector as background for Hero + Collectors */
   .purple-vector {

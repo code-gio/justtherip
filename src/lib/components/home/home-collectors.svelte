@@ -48,7 +48,7 @@
   }
 
   .collectors-label {
-    font-size: 12;
+    font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.15em;
     text-transform: uppercase;

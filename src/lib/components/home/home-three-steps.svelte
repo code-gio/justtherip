@@ -82,20 +82,37 @@
 
   .section-tag {
     display: block;
-    font-size: 0.6875rem;
-    font-weight: 500;
+    font-size: 12px;
+    font-weight: 700;
     letter-spacing: 0.15em;
     margin-bottom: 1rem;
     text-transform: uppercase;
   }
 
+  @media (max-width: 1024px) {
+    .section-tag {
+      font-size: 10px;
+    }
+  }
+
   .section-title {
-    font-family: var(--font-display, var(--font-sans));
-    font-size: clamp(2rem, 5vw, 3rem);
+    font-size: 48px;
     font-weight: 700;
     color: var(--text-white);
     margin: 0;
     text-transform: uppercase;
+  }
+
+  @media (max-width: 1024px) {
+    .section-title {
+      font-size: 36px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .section-title {
+      font-size: 28px;
+    }
   }
 
   .steps-grid {
@@ -173,7 +190,7 @@
 
   .step-content {
     position: relative;
-    background: rgba(10, 10, 10, 0.95);
+    /* background: rgba(10, 10, 10, 0.95); */
     border-radius: 18px;
     padding: 3rem 2rem;
     display: flex;
@@ -218,17 +235,41 @@
   }
 
   .step-number-title {
-    font-family: var(--font-sans);
-    font-size: 1.25rem;
+    font-size: 24px;
     font-weight: 700;
     color: var(--text-white);
     margin: 0;
   }
 
+  @media (max-width: 1024px) {
+    .step-number-title {
+      font-size: 20px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .step-number-title {
+      font-size: 18px;
+    }
+  }
+
   .step-description {
-    font-size: 0.9375rem;
-    color: var(--text-gray);
+    font-size: 14px;
+    font-weight: 500;
+    color: #F8F8F8;
     line-height: 1.5;
     margin: 0;
+  }
+
+  @media (max-width: 1024px) {
+    .step-description {
+      font-size: 12px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .step-description {
+      font-size: 11px;
+    }
   }
 </style>

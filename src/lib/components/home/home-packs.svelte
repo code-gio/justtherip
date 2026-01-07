@@ -27,7 +27,7 @@
   ];
 </script>
 
-<section id="packs" class="packs-section">
+<section id="packs" class="packs-section mt-12">
   <div class="container">
     <div class="section-header">
       <span class="section-tag">PACK SHOWCASE</span>
@@ -102,17 +102,16 @@
 
   .section-tag {
     display: inline-block;
-    font-size: 0.6875rem;
+    font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.15em;
-    color: var(--text-muted);
+    color: white;
     margin-bottom: 0.75rem;
     text-transform: uppercase;
   }
 
   .section-title {
-    font-family: var(--font-display, var(--font-sans));
-    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-size: 48px;
     font-weight: 700;
     color: var(--text-white);
     margin: 0 0 1rem;
@@ -120,8 +119,8 @@
   }
 
   .section-description {
-    font-size: 0.875rem;
-    color: var(--text-gray);
+    font-size: 16px;
+    color: white;
     line-height: 1.6;
     max-width: 500px;
     margin: 0 auto;
@@ -257,13 +256,13 @@
   }
 
   .pack-name {
-    font-size: 1rem;
-    font-weight: 600;
+    font-size: 16px;
+    font-weight: 700;
     color: white;
   }
 
   .pack-price {
-    font-size: 0.875rem;
+    font-size: 16px;
     color: rgba(255, 255, 255, 0.7);
     font-weight: 500;
   }
@@ -301,9 +300,8 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.875rem 1.75rem;
-    font-family: var(--font-sans);
-    font-size: 0.8125rem;
-    font-weight: 600;
+    font-size: 16px;
+    font-weight: 700;
     border-radius: 100px;
     text-decoration: none;
     transition: all 0.25s ease;

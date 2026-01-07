@@ -54,13 +54,13 @@
 
   .section-header {
     text-align: center;
-    margin-bottom: 4rem;
+    margin-bottom: 2rem;
   }
 
   .section-tag {
     display: block;
-    font-size: 0.6875rem;
-    font-weight: 500;
+    font-size: 12px;
+    font-weight: 700;
     letter-spacing: 0.15em;
     color: var(--text-muted);
     margin-bottom: 1rem;
@@ -68,8 +68,7 @@
   }
 
   .section-title {
-    font-family: var(--font-display, var(--font-sans));
-    font-size: clamp(2rem, 5vw, 3rem);
+    font-size: 48px;
     font-weight: 700;
     color: var(--text-white);
     margin: 0;
@@ -154,8 +153,7 @@
   }
 
   .packs-available {
-    font-family: var(--font-display, var(--font-sans));
-    font-size: 1.5rem;
+    font-size: 32px;
     font-weight: 700;
     color: var(--text-white);
     text-transform: uppercase;
@@ -170,8 +168,9 @@
 
   .coming-soon {
     text-align: center;
-    font-size: 1rem;
-    color: var(--text-gray);
+    font-size: 16px;
+    color: white;
+    font-weight: 500;
     margin: 0;
   }
 </style>

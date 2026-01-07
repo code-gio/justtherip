@@ -98,8 +98,7 @@
     background: transparent;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-
-    height: 102px;
+    height: 140px;
   }
 
   .nav-landing.transparent {
@@ -166,8 +165,8 @@
   }
 
   .nav-link {
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
     color: #ffffff !important;
     text-decoration: none;
     letter-spacing: 0.05em;

@@ -31,7 +31,6 @@
     HomeFeaturedPacks,
   } from "$lib/components/home";
   import HomeFeatures from "$lib/components/home/home-features.svelte";
-  import NavLanding from "$lib/components/nav/nav-landing.svelte";
 </script>
 
 <svelte:head>
@@ -46,7 +45,6 @@
     rel="stylesheet"
   />
 </svelte:head>
-<NavLanding />
 
 <div class="landing-page dark">
   <!-- Main hero section with shared background for Hero, Collectors, and Packs -->

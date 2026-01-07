@@ -66,7 +66,8 @@
     align-items: center;
     justify-content: space-between;
     gap: 2rem;
-    padding-bottom: 2rem;
+     padding: 0rem 2rem;
+     padding-bottom: 2rem;
   }
 
   /* Gradient bottom border like nav */
@@ -116,7 +117,7 @@
   }
 
   .logo-image {
-    height: 80px;
+    height: 70px;
     width: auto;
   }
 

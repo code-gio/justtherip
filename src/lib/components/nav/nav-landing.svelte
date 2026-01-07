@@ -1,6 +1,10 @@
 <script lang="ts">
-  let { transparent = false } = $props();
+  let { transparent = false, session } = $props();
   let mobileMenuOpen = $state(false);
+
+  $effect(() => {
+    console.log(session?.expires_at);
+  });
 </script>
 
 <nav class="nav-landing" class:transparent>
@@ -20,10 +24,16 @@
     </div>
 
     <!-- Desktop Actions -->
-    <div class="nav-actions">
-      <a href="/sign-in" class="btn btn-ghost">LOG IN</a>
-      <a href="/sign-up" class="btn btn-primary">START RIPPING</a>
-    </div>
+    {#if session}
+      <div class="nav-actions">
+        <a href="/dashboard" class="btn btn-primary">DASHBOARD</a>
+      </div>
+    {:else}
+      <div class="nav-actions">
+        <a href="/sign-in" class="btn btn-ghost">LOG IN</a>
+        <a href="/sign-up" class="btn btn-primary">START RIPPING</a>
+      </div>
+    {/if}
 
     <!-- Mobile Menu Button -->
     <button
@@ -64,10 +74,16 @@
         <a href="#games" class="mobile-link">GAMES</a>
         <a href="#features" class="mobile-link">FEATURES</a>
       </div>
-      <div class="mobile-actions">
-        <a href="/sign-in" class="btn btn-ghost">LOG IN</a>
-        <a href="/sign-up" class="btn btn-primary">START RIPPING</a>
-      </div>
+      {#if session}
+        <div class="mobile-actions">
+          <a href="/dashboard" class="btn btn-primary">DASHBOARD</a>
+        </div>
+      {:else}
+        <div class="mobile-actions">
+          <a href="/sign-in" class="btn btn-ghost">LOG IN</a>
+          <a href="/sign-up" class="btn btn-primary">START RIPPING</a>
+        </div>
+      {/if}
     </div>
   {/if}
 </nav>
@@ -196,7 +212,7 @@
   .btn-ghost {
     background: #262037;
     color: rgba(255, 255, 255, 0.7);
-    border: 1px solid #6829F9;
+    border: 1px solid #6829f9;
   }
 
   .btn-ghost:hover {
@@ -204,7 +220,7 @@
   }
 
   .btn-primary {
-    background-color: #6829F9;
+    background-color: #6829f9;
     color: white;
   }
 

@@ -62,6 +62,11 @@ export const navMain = [
     url: "/shipments",
     icon: IconTruck,
   },
+  // {
+  //   title: "Media",
+  //   url: "/media",
+  //   icon: IconLifebuoy,
+  // },
 ];
 
 export const adminNav: NavItem[] = [

@@ -90,7 +90,6 @@ interface Card {
   id: string;
   card_name: string;
   card_image_url?: string | null;
-  tier_name: string;
   value_cents: number;
   set_name?: string | null;
   rarity?: string | null;

@@ -156,8 +156,6 @@ export const POST: RequestHandler = async ({ locals, request }) => {
         card_name: cardName,
         card_image_url: card.card_image_url || null,
         card_value_cents: valueCents,
-        tier_id: null, // No longer using tiers
-        tier_name: "N/A", // Placeholder for backward compatibility
         set_name: card.set_name || null,
         set_code: card.set_code || null,
         rarity: card.rarity || null,

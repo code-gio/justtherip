@@ -142,7 +142,6 @@ export const POST: RequestHandler = async ({ locals, request }) => {
         shipping_name: shippingName,
         shipping_phone: shippingPhone,
         card_name: card.card_name,
-        card_tier_name: card.tier_name,
         card_value_cents: card.card_value_cents,
         card_image_url: card.card_image_url,
       })
@@ -174,7 +173,6 @@ export const POST: RequestHandler = async ({ locals, request }) => {
         id: shipment.id,
         status: shipment.status,
         card_name: card.card_name,
-        card_tier_name: card.tier_name,
         card_value: (card.card_value_cents / 100).toFixed(2),
       },
     });

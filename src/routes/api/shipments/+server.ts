@@ -47,7 +47,6 @@ export const GET: RequestHandler = async ({ locals, url }) => {
     const transformedShipments = (shipments || []).map((shipment) => ({
       id: shipment.id,
       cardName: shipment.card_name,
-      cardTier: shipment.card_tier_name,
       cardValue: `$${(shipment.card_value_cents / 100).toFixed(2)}`,
       cardImage: shipment.card_image_url || undefined,
       status: shipment.status,

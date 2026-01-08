@@ -28,13 +28,13 @@ export const load: PageServerLoad = async ({ locals }) => {
     // Current inventory stats (unsold only)
     adminClient
       .from("user_inventory")
-      .select("card_value_cents, tier_name, game_code, is_sold, created_at")
+      .select("card_value_cents, game_code, is_sold, created_at")
       .eq("user_id", user.id)
       .eq("is_sold", false),
     // All inventory (including sold) for total value pulled
     adminClient
       .from("user_inventory")
-      .select("card_value_cents, tier_name, game_code, is_sold, sellback_rips, card_name, created_at")
+      .select("card_value_cents, game_code, is_sold, sellback_rips, card_name, created_at")
       .eq("user_id", user.id),
     // All transactions for comprehensive stats
     adminClient
@@ -136,16 +136,14 @@ export const load: PageServerLoad = async ({ locals }) => {
     cards.forEach((card: any) => {
       const value = card.value_cents || card.card_value_cents || 0;
       allPulledCards.push({
-        card_name: card.card_name || `${card.tier_name} Card`,
-        tier_name: card.tier_name,
+        card_name: card.card_name || "Card",
         value_cents: value,
         card_image_url: card.card_image_url || null,
       });
       if (value > bestPullValue) {
         bestPullValue = value;
         bestPull = {
-          card_name: card.card_name || `${card.tier_name} Card`,
-          tier_name: card.tier_name,
+          card_name: card.card_name || "Card",
           value_cents: value,
         };
       }
@@ -172,13 +170,10 @@ export const load: PageServerLoad = async ({ locals }) => {
     0
   );
 
-  // Count cards by tier (current inventory)
-  const tierBreakdown: Record<string, number> = {};
+  // Count rare cards (high value cards >= $50)
   let rareCardsCount = 0;
   inventory.forEach((card: any) => {
-    const tier = card.tier_name;
-    tierBreakdown[tier] = (tierBreakdown[tier] || 0) + 1;
-    if (tier === "Chase" || tier === "Ultra Chase") {
+    if ((card.card_value_cents || 0) >= 5000) {
       rareCardsCount++;
     }
   });
@@ -286,7 +281,7 @@ export const load: PageServerLoad = async ({ locals }) => {
       recentActivity.push({
         id: `pack-${po.id}-${card.card_uuid || Math.random()}`,
         type: "pack_open",
-        description: `Opened pack and pulled ${card.card_name || card.tier_name}`,
+        description: `Opened pack and pulled ${card.card_name || "a card"}`,
         timestamp: timeAgo,
         value: `$${((card.value_cents || card.card_value_cents || 0) / 100).toFixed(2)}`,
       });
@@ -364,7 +359,6 @@ export const load: PageServerLoad = async ({ locals }) => {
       topValuableCards,
       cardsSoldCount,
       cardsByGame,
-      tierBreakdown,
       
       // Activity
       mostOpenedPack: mostOpenedPackName,

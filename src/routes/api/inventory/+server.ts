@@ -26,9 +26,6 @@ export const GET: RequestHandler = async ({ locals, url }) => {
     const limit = parseInt(url.searchParams.get("limit") || "50", 10);
     const offset = (page - 1) * limit;
 
-    // Optional filter by tier
-    const tierFilter = url.searchParams.get("tier");
-
     // Build query - show all cards that aren't sold (including shipped ones for visibility)
     let query = adminClient
       .from("user_inventory")
@@ -36,10 +33,6 @@ export const GET: RequestHandler = async ({ locals, url }) => {
       .eq("user_id", user.id)
       .eq("is_sold", false)
       .order("created_at", { ascending: false });
-
-    if (tierFilter) {
-      query = query.eq("tier_name", tierFilter);
-    }
 
     query = query.range(offset, offset + limit - 1);
 
@@ -60,12 +53,6 @@ export const GET: RequestHandler = async ({ locals, url }) => {
         0
       ) || 0;
 
-    // Get tier breakdown
-    const tierBreakdown: Record<string, number> = {};
-    cards?.forEach((card: any) => {
-      tierBreakdown[card.tier_name] = (tierBreakdown[card.tier_name] || 0) + 1;
-    });
-
     return json({
       cards: cards || [],
       pagination: {
@@ -78,7 +65,6 @@ export const GET: RequestHandler = async ({ locals, url }) => {
         total_cards: count || 0,
         total_value_cents: totalValueCents,
         total_value_usd: (totalValueCents / 100).toFixed(2),
-        tier_breakdown: tierBreakdown,
       },
     });
   } catch (error) {

@@ -13,7 +13,6 @@
 
   interface CardData {
     id: string;
-    tier_name: string;
     card_image_url: string | null;
     card_name: string | null;
     card_value_cents: number;
@@ -172,9 +171,6 @@
       <!-- Card Information -->
       <div class="space-y-4">
         <div>
-          <Badge variant="secondary" class="mb-2">
-            {card.tier_name}
-          </Badge>
           <h3 class="text-2xl font-bold">${cardValue}</h3>
           {#if card.card_name}
             <p class="text-lg text-muted-foreground mt-1">{card.card_name}</p>

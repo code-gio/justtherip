@@ -13,7 +13,6 @@
     id: string;
     card_name: string;
     card_image_url?: string | null;
-    tier_name: string;
     value_cents: number;
     set_name?: string | null;
     rarity?: string | null;
@@ -39,16 +38,20 @@
     isShipping?: boolean;
   } = $props();
 
-  function getTierGradient(tierName: string): string {
-    const gradients: Record<string, string> = {
-      Trash: "from-slate-400 to-slate-600",
-      Low: "from-emerald-400 to-emerald-600",
-      Mid: "from-blue-400 to-blue-600",
-      High: "from-purple-400 to-purple-600",
-      Chase: "from-amber-400 to-orange-500",
-      "Ultra Chase": "from-rose-400 via-pink-500 to-purple-600",
-    };
-    return gradients[tierName] || "from-gray-400 to-gray-600";
+  function getValueGradient(valueCents: number): string {
+    if (valueCents >= 10000) {
+      return "from-rose-400 via-pink-500 to-purple-600";
+    } else if (valueCents >= 5000) {
+      return "from-amber-400 to-orange-500";
+    } else if (valueCents >= 2000) {
+      return "from-purple-400 to-purple-600";
+    } else if (valueCents >= 1000) {
+      return "from-blue-400 to-blue-600";
+    } else if (valueCents >= 500) {
+      return "from-emerald-400 to-emerald-600";
+    } else {
+      return "from-slate-400 to-slate-600";
+    }
   }
 </script>
 
@@ -107,24 +110,20 @@
       <div class="relative w-full">
         <!-- Glow Effect -->
         <div
-          class="absolute inset-0 bg-gradient-to-r {getTierGradient(
-            card.tier_name
+          class="absolute inset-0 bg-gradient-to-r {getValueGradient(
+            card.value_cents || 0
           )} rounded-3xl blur-3xl opacity-60 scale-110 animate-pulse"
         ></div>
 
         <!-- Card -->
         <div
-          class="relative aspect-[3/4] rounded-3xl bg-gradient-to-br {getTierGradient(
-            card.tier_name
+          class="relative aspect-[3/4] rounded-3xl bg-gradient-to-br {getValueGradient(
+            card.value_cents || 0
           )} p-1 shadow-2xl"
         >
           <div
             class="w-full h-full rounded-[22px] bg-card flex flex-col items-center justify-center p-8 text-center"
           >
-            <Badge class="mb-6 text-sm px-4 py-1.5"
-              >{card.tier_name}</Badge
-            >
-
             {#if card.card_image_url}
               <img
                 src={card.card_image_url}
@@ -134,8 +133,8 @@
             {/if}
 
             <div
-              class="text-5xl sm:text-6xl font-black mb-4 bg-gradient-to-br {getTierGradient(
-                card.tier_name
+              class="text-5xl sm:text-6xl font-black mb-4 bg-gradient-to-br {getValueGradient(
+                card.value_cents || 0
               )} bg-clip-text text-transparent"
             >
               ${((card.value_cents || 0) / 100).toFixed(2)}

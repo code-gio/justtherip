@@ -10,7 +10,6 @@
 
   interface CardData {
     id: string;
-    tier_name: string;
     card_image_url: string | null;
     card_name: string | null;
     card_value_cents: number;
@@ -238,7 +237,6 @@
             <div class="flex items-start justify-between">
               <div>
                 <Badge variant="secondary" class="mb-2">
-                  {card.tier_name}
                 </Badge>
                 <h3 class="text-lg font-semibold">
                   {card.card_name || "Card"}

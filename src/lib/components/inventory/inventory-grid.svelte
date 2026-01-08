@@ -8,7 +8,6 @@
 
   interface CardData {
     id: string;
-    tier_name: string;
     card_image_url: string | null;
     card_name: string | null;
     card_value_cents: number;

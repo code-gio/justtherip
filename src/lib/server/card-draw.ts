@@ -231,6 +231,19 @@ export async function drawCardFromPack(
     // Select a card using weighted random
     const selectedPackCard = selectCardByProbability(validCards, probabilities);
 
+    // Verify the selected card belongs to this pack
+    if (selectedPackCard.pack_id !== packId) {
+      console.error("Selected card does not belong to pack:", {
+        selectedPackCardPackId: selectedPackCard.pack_id,
+        requestedPackId: packId,
+        cardUuid: selectedPackCard.card_uuid,
+      });
+      return {
+        success: false,
+        error: "Selected card does not belong to this pack",
+      };
+    }
+
     // #region agent log
     fetch('http://127.0.0.1:7242/ingest/e77bc13f-e7c1-4706-97a3-e965fe962aa8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'card-draw.ts:210',message:'Card selected',data:{packId,selectedCardUuid:selectedPackCard.card_uuid,selectedCardPackId:selectedPackCard.pack_id,selectedCardMarketValue:selectedPackCard.market_value},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
     // #endregion
@@ -260,6 +273,19 @@ export async function drawCardFromPack(
     // #region agent log
     fetch('http://127.0.0.1:7242/ingest/e77bc13f-e7c1-4706-97a3-e965fe962aa8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'card-draw.ts:228',message:'Card data fetched',data:{packId,cardUuid:selectedPackCard.card_uuid,cardId:cardData.id,cardName:cardData.name,cardSetName:cardData.set_name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
     // #endregion
+
+    // Verify the fetched card matches the selected card_uuid
+    if (cardData.id !== selectedPackCard.card_uuid) {
+      console.error("Fetched card does not match selected card_uuid:", {
+        selectedCardUuid: selectedPackCard.card_uuid,
+        fetchedCardId: cardData.id,
+        packId,
+      });
+      return {
+        success: false,
+        error: "Fetched card does not match selected card",
+      };
+    }
 
     // Extract card information
     const extracted = extractCardData(cardData);

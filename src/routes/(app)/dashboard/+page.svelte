@@ -317,7 +317,6 @@
           <Card.Content>
             <div class="space-y-2">
               <p class="text-lg font-semibold">{stats.bestPull.card_name}</p>
-              <p class="text-sm text-muted-foreground">{stats.bestPull.tier_name}</p>
               <p class="text-2xl font-bold text-primary">
                 ${((stats.bestPull.value_cents || 0) / 100).toFixed(2)}
               </p>
@@ -336,7 +335,6 @@
               <div class="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-medium truncate">{card.card_name}</p>
-                  <p class="text-xs text-muted-foreground">{card.tier_name}</p>
                 </div>
                 <p class="text-sm font-bold text-primary ml-2">
                   ${((card.value_cents || 0) / 100).toFixed(2)}

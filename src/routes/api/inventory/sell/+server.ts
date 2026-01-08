@@ -78,7 +78,6 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     const addResult = await addRips(user.id, sellbackRips, {
       card_id: card.id,
       card_value_cents: card.card_value_cents,
-      tier_name: card.tier_name,
       reason: "card_sellback",
     });
 
@@ -109,7 +108,6 @@ export const POST: RequestHandler = async ({ locals, request }) => {
       success: true,
       card: {
         id: card.id,
-        tier_name: card.tier_name,
         value_cents: card.card_value_cents,
         value_usd: (card.card_value_cents / 100).toFixed(2),
       },

@@ -29,7 +29,6 @@
     if (pulledCard) {
       console.log("[TRACE] pulledCard changed (reactive):", {
         card_name: pulledCard.card_name,
-        tier_name: pulledCard.tier_name,
         has_card_name: !!pulledCard.card_name,
         all_keys: Object.keys(pulledCard),
         full_object: JSON.stringify(pulledCard, null, 2)
@@ -65,7 +64,6 @@
         success: result.success,
         card: result.card,
         card_name: result.card?.card_name,
-        tier_name: result.card?.tier_name,
         fullResponse: JSON.stringify(result, null, 2)
       });
 
@@ -76,7 +74,6 @@
       // TRACE: Log the pulledCard state after assignment
       console.log("[TRACE] pulledCard state after assignment:", {
         card_name: pulledCard?.card_name,
-        tier_name: pulledCard?.tier_name,
         has_card_name: !!pulledCard?.card_name,
         fullPulledCard: JSON.stringify(pulledCard, null, 2)
       });
@@ -84,7 +81,7 @@
       await invalidateAll();
 
       toast.success(
-        `You pulled a ${result.card.tier_name} worth $${(result.card.value_cents / 100).toFixed(2)}!`
+        `You pulled ${result.card.card_name || 'a card'} worth $${(result.card.value_cents / 100).toFixed(2)}!`
       );
     } catch (error) {
       console.error("Pack opening error:", error);

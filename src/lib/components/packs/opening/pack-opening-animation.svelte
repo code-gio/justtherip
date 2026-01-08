@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
-  import { Badge } from "$lib/components/ui/badge";
   import {
     IconSparkles,
     IconLoader2,
@@ -8,6 +7,9 @@
     IconPackage,
     IconX,
   } from "@tabler/icons-svelte";
+  import { tweened } from "svelte/motion";
+  import { cubicOut } from "svelte/easing";
+  import ConfettiCanvas from "./confetti-canvas.svelte";
 
   interface Card {
     id: string;
@@ -18,8 +20,19 @@
     rarity?: string | null;
   }
 
+  interface CardPoolItem {
+    id: string;
+    name: string;
+    image_uri?: any;
+    market_value?: number;
+    rarity?: string | null;
+  }
+
+  type RarityCategory = "common" | "rare" | "epic" | "legendary";
+
   let {
     card,
+    cardPool = [],
     isOpening = $bindable(false),
     onOpenAnother,
     onSell,
@@ -29,6 +42,7 @@
     isShipping = false,
   }: {
     card: Card | null;
+    cardPool?: CardPoolItem[];
     isOpening?: boolean;
     onOpenAnother: () => void;
     onSell: (cardId: string) => Promise<void>;
@@ -38,6 +52,53 @@
     isShipping?: boolean;
   } = $props();
 
+  // Animation state
+  let scrollPosition = $state(0);
+  let animationPhase = $state<"idle" | "fast" | "decelerate" | "lock" | "reveal">("idle");
+  let winningCardIndex = $state(-1);
+  let shakeOffset = $state({ x: 0, y: 0 });
+  let confettiActive = $state(false);
+  let carouselContainer = $state<HTMLDivElement | null>(null);
+  let cardWidth = 240;
+  let cardGap = 24;
+  let cardItemWidth = cardWidth + cardGap;
+  let previousIsOpening = $state(false);
+  let previousCard = $state<Card | null>(null);
+
+  // Extract image URL from image_uri field
+  function extractImageUrl(imageUri: any): string | null {
+    if (!imageUri) return null;
+    if (typeof imageUri === "string") {
+      try {
+        const parsed = JSON.parse(imageUri);
+        if (typeof parsed === "object") {
+          return parsed.normal || parsed.large || parsed.png || parsed.small || null;
+        }
+        return imageUri;
+      } catch {
+        return imageUri;
+      }
+    }
+    if (typeof imageUri === "object") {
+      return imageUri.normal || imageUri.large || imageUri.png || imageUri.small || null;
+    }
+    return null;
+  }
+
+  // Get rarity category based on value (value is in cents)
+  function getRarityCategory(valueCents: number): RarityCategory {
+    if (valueCents >= 50000) return "legendary";
+    if (valueCents >= 5000) return "epic";
+    if (valueCents >= 500) return "rare";
+    return "common";
+  }
+
+  // Get value in cents from card pool item (market_value is already in cents)
+  function getCardValueCents(cardItem: CardPoolItem): number {
+    return (cardItem.market_value || 0);
+  }
+
+  // Get value gradient for styling
   function getValueGradient(valueCents: number): string {
     if (valueCents >= 10000) {
       return "from-rose-400 via-pink-500 to-purple-600";
@@ -53,45 +114,350 @@
       return "from-slate-400 to-slate-600";
     }
   }
+
+  // Get rarity gradient for VFX
+  function getRarityGradient(category: RarityCategory): string {
+    switch (category) {
+      case "legendary":
+        return "from-rose-400 via-pink-500 to-purple-600";
+      case "epic":
+        return "from-amber-400 to-orange-500";
+      case "rare":
+        return "from-blue-400 to-blue-600";
+      default:
+        return "from-slate-400 to-slate-600";
+    }
+  }
+
+  // Create duplicated card pool for infinite scroll
+  function createDuplicatedPool(pool: CardPoolItem[], duplicates: number = 4): CardPoolItem[] {
+    const duplicated: CardPoolItem[] = [];
+    for (let i = 0; i < duplicates; i++) {
+      duplicated.push(...pool);
+    }
+    return duplicated;
+  }
+
+  // Find winning card index in pool
+  function findWinningCardIndex(pool: CardPoolItem[], winningCard: Card | null): number {
+    if (!winningCard || !pool.length) return Math.floor(pool.length / 2);
+    
+    // Try multiple matching strategies
+    // 1. Match by id
+    let index = pool.findIndex((c) => c.id === winningCard.id);
+    if (index >= 0) return index;
+    
+    // 2. Match by name (case insensitive)
+    const cardNameLower = winningCard.card_name?.toLowerCase();
+    if (cardNameLower) {
+      index = pool.findIndex((c) => c.name?.toLowerCase() === cardNameLower);
+      if (index >= 0) return index;
+    }
+    
+    // 3. Match by value (within 10 cents tolerance)
+    if (winningCard.value_cents) {
+      index = pool.findIndex(
+        (c) => Math.abs((c.market_value || 0) - winningCard.value_cents) < 10
+      );
+      if (index >= 0) return index;
+    }
+    
+    // Fallback to middle
+    return Math.floor(pool.length / 2);
+  }
+
+  // Calculate scroll position to center winning card
+  function calculateWinningScrollPosition(
+    cardIndex: number,
+    poolLength: number,
+    containerWidth: number
+  ): number {
+    const centerOffset = containerWidth / 2 - cardWidth / 2;
+    const cardPosition = cardIndex * cardItemWidth;
+    return cardPosition - centerOffset;
+  }
+
+  // Track changes and handle them with minimal effects
+  $effect(() => {
+    // Handle opening start - reset and start animation when opening begins
+    if (isOpening && cardPool.length > 0) {
+      // If we're starting a new opening (either first time or after reveal)
+      if (!previousIsOpening || animationPhase === "reveal") {
+        previousIsOpening = true;
+        previousCard = null; // Clear previous card so new one can trigger VFX
+        resetAnimation();
+        // Small delay to ensure reset completes
+        setTimeout(() => {
+          startCarouselAnimation();
+        }, 10);
+      }
+    }
+    // Handle opening end
+    else if (!isOpening && previousIsOpening) {
+      previousIsOpening = false;
+      // Don't reset here - keep reveal state if card is shown
+      // Only reset if no card
+      if (!card && animationPhase !== "idle") {
+        resetAnimation();
+        previousCard = null;
+      }
+    }
+  });
+
+  $effect(() => {
+    // Handle card reveal
+    if (card && !isOpening && card !== previousCard && animationPhase !== "reveal") {
+      previousCard = card;
+      const category = getRarityCategory(card.value_cents || 0);
+      triggerRevealVFX(category);
+      animationPhase = "reveal";
+    }
+  });
+
+  function startCarouselAnimation() {
+    if (!cardPool.length) return;
+
+    const duplicatedPool = createDuplicatedPool(cardPool, 4);
+    const poolLength = duplicatedPool.length;
+    const startIndex = Math.floor(poolLength / 2); // Start in middle of duplicated pool
+
+    // Phase 1: Fast linear scroll (0-1.5s)
+    animationPhase = "fast";
+    const fastScrollDistance = 3000; // Scroll 3000px in 1.5s
+    const fastDuration = 1500;
+
+    scrollPosition = startIndex * cardItemWidth;
+
+    const fastTween = tweened(scrollPosition, {
+      duration: fastDuration,
+      easing: (t) => t, // Linear
+    });
+
+    fastTween.set(scrollPosition + fastScrollDistance);
+
+    fastTween.subscribe((value) => {
+      scrollPosition = value;
+    });
+
+    // Phase 2: Deceleration (1.5s-3.5s)
+    setTimeout(() => {
+      animationPhase = "decelerate";
+      const decelStart = scrollPosition;
+      const decelDistance = 2000; // Additional scroll during deceleration
+      const decelDuration = 2000;
+
+      const decelTween = tweened(decelStart, {
+        duration: decelDuration,
+        easing: cubicOut,
+      });
+
+      decelTween.set(decelStart + decelDistance);
+
+      decelTween.subscribe((value) => {
+        scrollPosition = value;
+      });
+
+      // Phase 3: Lock onto winning card (3.5s-4s)
+      setTimeout(() => {
+        animationPhase = "lock";
+        
+        // Wait for card to be available, or use a random card from pool
+        const checkCard = () => {
+          const targetCard = card || null;
+          const winningIndex = targetCard
+            ? findWinningCardIndex(duplicatedPool, targetCard)
+            : Math.floor(duplicatedPool.length / 2);
+          winningCardIndex = winningIndex;
+
+          if (carouselContainer) {
+            const containerWidth = carouselContainer.clientWidth;
+            const targetScroll = calculateWinningScrollPosition(
+              winningIndex,
+              poolLength,
+              containerWidth
+            );
+
+            const lockTween = tweened(scrollPosition, {
+              duration: 500,
+              easing: cubicOut,
+            });
+
+            lockTween.set(targetScroll);
+
+            lockTween.subscribe((value) => {
+              scrollPosition = value;
+            });
+
+            // Transition to reveal after lock completes
+            setTimeout(() => {
+              if (card) {
+                animationPhase = "reveal";
+                const category = getRarityCategory(card.value_cents || 0);
+                triggerRevealVFX(category);
+              }
+            }, 500);
+          }
+        };
+
+        // Check immediately, and also poll for card if not available
+        checkCard();
+        if (!card) {
+          const checkInterval = setInterval(() => {
+            if (card) {
+              clearInterval(checkInterval);
+              checkCard();
+            }
+          }, 100);
+          setTimeout(() => clearInterval(checkInterval), 2000);
+        }
+      }, decelDuration);
+    }, fastDuration);
+  }
+
+  function resetAnimation() {
+    animationPhase = "idle";
+    scrollPosition = 0;
+    winningCardIndex = -1;
+    shakeOffset = { x: 0, y: 0 };
+    confettiActive = false;
+    // Note: Don't reset previousIsOpening or previousCard here
+    // They are managed by the effects
+  }
+
+  function triggerRevealVFX(category: RarityCategory) {
+    if (category === "legendary") {
+      // Screen shake
+      const shakeDuration = 600;
+      const shakeIntensity = 8;
+      let shakeTime = 0;
+
+      const shakeInterval = setInterval(() => {
+        shakeTime += 16;
+        if (shakeTime >= shakeDuration) {
+          clearInterval(shakeInterval);
+          shakeOffset = { x: 0, y: 0 };
+        } else {
+          shakeOffset = {
+            x: (Math.random() - 0.5) * shakeIntensity,
+            y: (Math.random() - 0.5) * shakeIntensity,
+          };
+        }
+      }, 16);
+
+      // Confetti
+      confettiActive = true;
+      setTimeout(() => {
+        confettiActive = false;
+      }, 3000);
+    }
+  }
+
+  // Get duplicated pool for rendering
+  let duplicatedPool = $derived(cardPool.length > 0 ? createDuplicatedPool(cardPool, 4) : []);
 </script>
 
 {#if isOpening}
-  <!-- Opening Animation Overlay -->
+  <!-- Carousel Opening Animation Overlay -->
   <div
-    class="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
+    class="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 overflow-hidden"
+    style="transform: translate({shakeOffset.x}px, {shakeOffset.y}px); transition: transform 0.05s linear;"
   >
-    <div class="flex flex-col items-center max-w-md w-full space-y-8">
-      <!-- Pack Opening Animation -->
-      <div class="relative w-64 h-96">
-        <!-- Glow Effect -->
+    <div class="w-full max-w-7xl px-4">
+      <!-- Carousel Container -->
+      <div
+        bind:this={carouselContainer}
+        class="relative w-full overflow-visible"
+        style="height: {cardWidth * 1.5 + 40}px; min-height: 400px;"
+      >
+        <!-- Card Strip -->
         <div
-          class="absolute inset-0 bg-gradient-to-r from-primary via-purple-500 to-pink-500 rounded-3xl blur-3xl opacity-60 scale-110 animate-pulse"
-        ></div>
-
-        <!-- Pack Card with Animation -->
-        <div
-          class="relative aspect-[3/4] rounded-3xl bg-gradient-to-br from-primary via-purple-500 to-pink-500 p-1 shadow-2xl animate-spin-slow"
+          class="absolute top-0 left-0 flex items-start"
+          style="transform: translateX(-{scrollPosition}px); will-change: transform; gap: {cardGap}px; padding-top: 20px;"
         >
-          <div
-            class="w-full h-full rounded-[22px] bg-card flex flex-col items-center justify-center p-8"
-          >
-            <IconLoader2
-              size={64}
-              class="text-primary animate-spin mb-4"
-            />
-            <p class="text-xl font-bold text-foreground">Opening Pack...</p>
-            <p class="text-sm text-muted-foreground mt-2">The magic is happening!</p>
-          </div>
+          {#each duplicatedPool as cardItem, index}
+            {@const imageUrl = extractImageUrl(cardItem.image_uri)}
+            {@const valueCents = getCardValueCents(cardItem)}
+            {@const rarity = getRarityCategory(valueCents)}
+            {@const isRarePlus = rarity !== "common"}
+            {@const isWinning = card && (cardItem.id === card.id || cardItem.name === card.card_name)}
+            {@const isFocused = Math.abs(index - winningCardIndex) < 3 && animationPhase === "lock"}
+
+            <div
+              class="relative transition-all duration-300 flex-shrink-0 {isFocused
+                ? "scale-110 z-10"
+                : "scale-100"} {animationPhase === "fast" ? "blur-sm" : "blur-0"}"
+              style="width: {cardWidth}px; aspect-ratio: 2/3;"
+            >
+              <!-- Card Image -->
+              <div
+                class="w-full h-full rounded-lg overflow-hidden border-2 {isWinning && animationPhase === "lock"
+                  ? "border-yellow-400 shadow-2xl shadow-yellow-400/50"
+                  : "border-border"} bg-card"
+              >
+                {#if imageUrl}
+                  <img
+                    src={imageUrl}
+                    alt={cardItem.name}
+                    class="w-full h-full object-contain"
+                  />
+                {:else}
+                  <div
+                    class="w-full h-full flex items-center justify-center bg-muted"
+                  >
+                    <IconPackage size={32} class="text-muted-foreground/50" />
+                  </div>
+                {/if}
+              </div>
+
+              <!-- Rare+ Glint Effect -->
+              {#if isRarePlus && animationPhase !== "lock"}
+                <div
+                  class="absolute inset-0 rounded-lg pointer-events-none overflow-hidden"
+                >
+                  <div
+                    class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-glint"
+                    style="transform: translateX(-100%); animation: glint 2s infinite;"
+                  ></div>
+                </div>
+              {/if}
+
+              <!-- Glow for rare+ cards -->
+              {#if isRarePlus}
+                <div
+                  class="absolute -inset-1 rounded-lg opacity-50 blur-md bg-gradient-to-r {getRarityGradient(
+                    rarity
+                  )} pointer-events-none"
+                ></div>
+              {/if}
+            </div>
+          {/each}
         </div>
+
+        <!-- Center Indicator -->
+        <div
+          class="absolute left-1/2 top-0 -translate-x-1/2 w-2 border-x-2 border-yellow-400/50 pointer-events-none"
+          style="height: {cardWidth * 1.5 + 20}px;"
+        ></div>
+      </div>
+
+      <!-- Loading Text -->
+      <div class="text-center mt-8">
+        <p class="text-xl font-bold text-foreground">Opening Pack...</p>
+        <p class="text-sm text-muted-foreground mt-2">The magic is happening!</p>
       </div>
     </div>
   </div>
 {/if}
 
 {#if card && !isOpening}
+  {@const rarityCategory = getRarityCategory(card.value_cents || 0)}
+  {@const isLegendary = rarityCategory === "legendary"}
+  {@const isEpic = rarityCategory === "epic"}
+  {@const isRare = rarityCategory === "rare"}
   <!-- Card Reveal Overlay -->
   <div
     class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-500"
+    style="transform: translate({shakeOffset.x}px, {shakeOffset.y}px);"
   >
     <!-- Close Button -->
     <Button
@@ -104,22 +470,40 @@
       <IconX size={20} />
     </Button>
 
-    <div
-      class="flex flex-col items-center max-w-md w-full space-y-8"
-    >
+    <div class="flex flex-col items-center max-w-md w-full space-y-8">
+
       <div class="relative w-full">
         <!-- Glow Effect -->
         <div
           class="absolute inset-0 bg-gradient-to-r {getValueGradient(
             card.value_cents || 0
-          )} rounded-3xl blur-3xl opacity-60 scale-110 animate-pulse"
+          )} rounded-3xl blur-3xl opacity-60 scale-110 {isRare || isEpic || isLegendary
+            ? "animate-pulse"
+            : ""}"
         ></div>
+
+        <!-- Lens Flare for Epic+ -->
+        {#if isEpic || isLegendary}
+          <div
+            class="absolute inset-0 rounded-3xl pointer-events-none overflow-hidden"
+          >
+            <div
+              class="absolute inset-0 bg-gradient-radial from-white/20 via-transparent to-transparent animate-lens-flare"
+            ></div>
+          </div>
+        {/if}
 
         <!-- Card -->
         <div
           class="relative aspect-[3/4] rounded-3xl bg-gradient-to-br {getValueGradient(
             card.value_cents || 0
-          )} p-1 shadow-2xl"
+          )} p-1 shadow-2xl {isLegendary
+            ? "animate-card-pop-legendary"
+            : isEpic
+              ? "animate-card-pop-epic"
+              : isRare
+                ? "animate-card-pop-rare"
+                : "animate-card-pop-common"}"
         >
           <div
             class="w-full h-full rounded-[22px] bg-card flex flex-col items-center justify-center p-8 text-center"
@@ -157,7 +541,37 @@
             {/if}
           </div>
         </div>
+
+        <!-- Chromatic Aberration for Legendary -->
+        {#if isLegendary}
+          <div
+            class="absolute inset-0 rounded-3xl pointer-events-none mix-blend-screen"
+            style="filter: url(#chromatic-aberration);"
+          >
+            <svg class="absolute inset-0 w-0 h-0">
+              <defs>
+                <filter id="chromatic-aberration">
+                  <feOffset in="SourceGraphic" dx="2" dy="0" result="red" />
+                  <feOffset in="SourceGraphic" dx="-2" dy="0" result="blue" />
+                  <feComponentTransfer in="red">
+                    <feFuncA type="discrete" tableValues="1 0" />
+                  </feComponentTransfer>
+                  <feComponentTransfer in="blue">
+                    <feFuncA type="discrete" tableValues="0 1" />
+                  </feComponentTransfer>
+                  <feBlend in="SourceGraphic" in2="red" mode="screen" />
+                  <feBlend in="SourceGraphic" in2="blue" mode="screen" />
+                </filter>
+              </defs>
+            </svg>
+          </div>
+        {/if}
       </div>
+
+      <!-- Confetti Canvas for Legendary -->
+      {#if isLegendary && confettiActive}
+        <ConfettiCanvas active={confettiActive} />
+      {/if}
 
       <!-- Action Buttons -->
       <div class="flex flex-wrap justify-center gap-3 w-full">
@@ -202,6 +616,125 @@
 {/if}
 
 <style>
+  @keyframes glint {
+    0% {
+      transform: translateX(-100%) skewX(-20deg);
+    }
+    100% {
+      transform: translateX(200%) skewX(-20deg);
+    }
+  }
+
+  @keyframes lens-flare {
+    0%,
+    100% {
+      opacity: 0;
+      transform: rotate(0deg) scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: rotate(180deg) scale(1.2);
+    }
+  }
+
+  @keyframes card-pop-common {
+    0% {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes card-pop-rare {
+    0% {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    30% {
+      transform: scale(1.1);
+    }
+    60% {
+      transform: scale(0.95);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes card-pop-epic {
+    0% {
+      transform: scale(0.7);
+      opacity: 0;
+    }
+    25% {
+      transform: scale(1.15);
+    }
+    50% {
+      transform: scale(0.9);
+    }
+    75% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes card-pop-legendary {
+    0% {
+      transform: scale(0.6) rotate(-5deg);
+      opacity: 0;
+    }
+    20% {
+      transform: scale(1.2) rotate(3deg);
+    }
+    40% {
+      transform: scale(0.85) rotate(-2deg);
+    }
+    60% {
+      transform: scale(1.1) rotate(1deg);
+    }
+    80% {
+      transform: scale(0.95) rotate(-0.5deg);
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+  }
+
+  .animate-glint {
+    animation: glint 2s infinite;
+  }
+
+  .animate-lens-flare {
+    animation: lens-flare 3s ease-in-out infinite;
+  }
+
+  .animate-card-pop-common {
+    animation: card-pop-common 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .animate-card-pop-rare {
+    animation: card-pop-rare 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .animate-card-pop-epic {
+    animation: card-pop-epic 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .animate-card-pop-legendary {
+    animation: card-pop-legendary 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
   @keyframes spin-slow {
     from {
       transform: rotate(0deg);
@@ -215,4 +748,3 @@
     animation: spin-slow 3s linear infinite;
   }
 </style>
-

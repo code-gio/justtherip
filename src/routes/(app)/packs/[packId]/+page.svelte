@@ -211,6 +211,7 @@
     <PackOpeningAnimation
       bind:isOpening
       card={pulledCard}
+      cardPool={pack.cards || []}
       onOpenAnother={openPack}
       onSell={sellCard}
       onShip={openShipDialog}

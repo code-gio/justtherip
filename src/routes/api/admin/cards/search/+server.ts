@@ -61,22 +61,77 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
     // Handle MTG cards with JSONB prices field
     if (gameCode === "mtg") {
-      // Filter by search query first to reduce dataset (only if search query is not empty)
-      if (searchQuery) {
-        query = query.ilike("name", `%${searchQuery}%`);
+      // For MTG, if no search query, get a sample of cards ordered by name
+      // to avoid loading too many cards and causing timeout
+      if (!searchQuery) {
+        // Just fetch a limited set ordered by name for initial display
+        // Use proper range based on the current page
+        const rangeStart = offset;
+        const rangeEnd = offset + CARDS_PER_PAGE - 1;
+
+        const { data: sampleCards, error: cardsError } = await query
+          .order("name", { ascending: true })
+          .range(rangeStart, rangeEnd);
+
+        if (cardsError) {
+          console.error("Error fetching cards:", cardsError);
+          return json({ error: "Failed to fetch cards" }, { status: 500 });
+        }
+
+        // Filter by price range and assigned cards
+        const filteredCards = (sampleCards || [])
+          .filter((card: any) => {
+            const prices = card.prices || {};
+            const usdPrice = parseFloat(prices.usd || "0");
+            const usdFoilPrice = parseFloat(prices.usd_foil || "0");
+            const priceCents = Math.max(usdPrice, usdFoilPrice) * 100;
+
+            return (
+              priceCents >= effectiveMinValue &&
+              priceCents <= effectiveMaxValue &&
+              (!assignedCardIds.length || !assignedCardIds.includes(card.id))
+            );
+          })
+          .sort((a: any, b: any) => {
+            const aPrice = Math.max(
+              parseFloat(a.prices?.usd || "0"),
+              parseFloat(a.prices?.usd_foil || "0")
+            );
+            const bPrice = Math.max(
+              parseFloat(b.prices?.usd || "0"),
+              parseFloat(b.prices?.usd_foil || "0")
+            );
+            return bPrice - aPrice;
+          });
+
+        const paginatedCards = filteredCards;
+        const hasMoreCards = sampleCards.length === CARDS_PER_PAGE;
+
+        return json({
+          cards: paginatedCards,
+          total: filteredCards.length,
+          page,
+          perPage: CARDS_PER_PAGE,
+          hasMore: hasMoreCards,
+        });
       }
 
-      // Limit initial fetch to reasonable size for filtering
-      // Note: For production, consider creating a PostgreSQL function for JSONB filtering
-      const maxFetch = 10000; // Limit to prevent memory issues
-      const { data: allCards, error: cardsError } = await query.limit(maxFetch);
+      // Filter by search query first to reduce dataset
+      query = query.ilike("name", `%${searchQuery}%`);
+
+      // With trigram index, we can handle more results
+      // If you haven't created the trigram index yet, this might still timeout
+      const maxFetch = 200; // Reasonable with trigram index
+      const { data: allCards, error: cardsError } = await query
+        .order("name", { ascending: true })
+        .limit(maxFetch);
 
       if (cardsError) {
         console.error("Error fetching cards:", cardsError);
         return json({ error: "Failed to fetch cards" }, { status: 500 });
       }
 
-      // Filter by price range in memory
+      // Filter by price range and assigned cards in memory
       const filteredCards = (allCards || [])
         .filter((card: any) => {
           const prices = card.prices || {};
@@ -103,7 +158,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         });
 
       const total = filteredCards.length;
-      const paginatedCards = filteredCards.slice(offset, offset + CARDS_PER_PAGE);
+      const paginatedCards = filteredCards.slice(
+        offset,
+        offset + CARDS_PER_PAGE
+      );
 
       return json({
         cards: paginatedCards,

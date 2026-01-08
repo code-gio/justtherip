@@ -6,6 +6,7 @@
     IconLoader2,
     IconCoin,
     IconPackage,
+    IconX,
   } from "@tabler/icons-svelte";
 
   interface Card {
@@ -24,6 +25,7 @@
     onOpenAnother,
     onSell,
     onShip,
+    onClose,
     isSelling = false,
     isShipping = false,
   }: {
@@ -32,6 +34,7 @@
     onOpenAnother: () => void;
     onSell: (cardId: string) => Promise<void>;
     onShip: (cardId: string) => void;
+    onClose: () => void;
     isSelling?: boolean;
     isShipping?: boolean;
   } = $props();
@@ -87,6 +90,17 @@
   <div
     class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-500"
   >
+    <!-- Close Button -->
+    <Button
+      variant="ghost"
+      size="icon"
+      class="absolute top-4 right-4 z-10 h-10 w-10 rounded-full bg-background/80 hover:bg-background border"
+      onclick={onClose}
+      disabled={isSelling || isShipping}
+    >
+      <IconX size={20} />
+    </Button>
+
     <div
       class="flex flex-col items-center max-w-md w-full space-y-8"
     >

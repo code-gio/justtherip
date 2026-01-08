@@ -50,6 +50,7 @@
 		"@supabase/ssr": "^0.8.0",
 		"@supabase/supabase-js": "^2.89.0",
 		"gsap": "^3.14.2",
-		"stripe": "^20.1.0"
+		"stripe": "^20.1.0",
+		"valibot": "^1.2.0"
 	}
 }

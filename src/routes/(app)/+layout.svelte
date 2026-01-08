@@ -9,7 +9,7 @@
 <Sidebar.Provider style=" --header-height: calc(var(--spacing) * 12);">
   <AppSidebar variant="inset" />
   <Sidebar.Inset>
-    <AppHeader ripBalance={data.ripBalance} tiers={data.tiers} />
+    <AppHeader ripBalance={data.ripBalance} />
     <div class="flex flex-1 flex-col">
       <div class="@container/main flex flex-1 flex-col gap-2">
         <div class="flex flex-col gap-4 p-4 md:gap-6 md:p-6">

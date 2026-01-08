@@ -1,7 +1,7 @@
 import type { NavItem, SocialLink } from "$lib/types/nav";
 import {
   IconLifebuoy,
-  IconSend,
+  IconList,
   IconCreditCard,
   IconDashboard,
   IconUser,
@@ -100,13 +100,13 @@ export const adminNav: NavItem[] = [
 export const navSecondary: NavItem[] = [
   {
     title: "Support",
-    url: "https://support.justtherip.gg",
+    url: "https://justtherip.featurebase.app/help",
     icon: IconLifebuoy,
   },
   {
-    title: "Feedback",
-    url: "https://feedback.justtherip.gg",
-    icon: IconSend,
+    title: "Roadmap",
+    url: "https://justtherip.featurebase.app/roadmap",
+    icon: IconList,
   },
 ];
 

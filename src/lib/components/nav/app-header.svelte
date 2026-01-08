@@ -4,23 +4,12 @@
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import DarkModeToggle from "$lib/components/shared/dark-mode-toggle.svelte";
   import HeaderRips from "./header-rips.svelte";
-  import HeaderOdds from "./header-odds.svelte";
   import HeaderInfo from "./header-info.svelte";
   import { navMain, adminNav, navSecondary, userNav } from "$lib/config";
 
-  interface CardTier {
-    id: string;
-    name: string;
-    probability: number;
-    min_value_cents: number;
-    max_value_cents: number;
-    color_hex: string;
-  }
-
   let {
     ripBalance = 0,
-    tiers = [],
-  }: { ripBalance?: number; tiers?: CardTier[] } = $props();
+  }: { ripBalance?: number } = $props();
 
   const allNavItems = [...navMain, ...adminNav, ...navSecondary, ...userNav];
 
@@ -51,7 +40,6 @@
     <h1 class="text-base font-medium">{currentTitle}</h1>
     <div class="ms-auto flex items-center gap-2">
       <HeaderInfo />
-      <HeaderOdds {tiers} />
       <HeaderRips balance={ripBalance} />
       <DarkModeToggle />
     </div>

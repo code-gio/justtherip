@@ -180,6 +180,10 @@
     shipDialogOpen = false;
     cardToShip = null;
   }
+
+  function closeReveal() {
+    pulledCard = null;
+  }
 </script>
 
 {#if !pack}
@@ -212,6 +216,7 @@
       onOpenAnother={openPack}
       onSell={sellCard}
       onShip={openShipDialog}
+      onClose={closeReveal}
       {isSelling}
       {isShipping}
     />

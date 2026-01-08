@@ -1,7 +1,7 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { spendRips, getUserRipBalance } from "$lib/server/rips";
-import { drawCard } from "$lib/server/card-draw";
+import { drawCardFromPack } from "$lib/server/card-draw";
 import { adminClient } from "$lib/server/rips";
 
 /**
@@ -10,9 +10,9 @@ import { adminClient } from "$lib/server/rips";
  * POST /api/packs/open
  *
  * Opens a pack for the authenticated user:
- * 1. Verifies user has sufficient Rips (1 Rip per pack)
+ * 1. Verifies user has sufficient Rips
  * 2. Deducts Rips from user's balance
- * 3. Draws a card using tier probability system
+ * 3. Draws a card using inverse-power probability distribution
  * 4. Records pack opening in database
  * 5. Adds card to user's inventory
  * 6. Returns the drawn card
@@ -88,8 +88,15 @@ export const POST: RequestHandler = async ({ locals, request }) => {
       );
     }
 
-    // Draw a card
-    const drawResult = await drawCard(user.id);
+    // Draw a card from the pack
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/e77bc13f-e7c1-4706-97a3-e965fe962aa8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'+server.ts:92',message:'Calling drawCardFromPack',data:{packId,userId:user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    const drawResult = await drawCardFromPack(packId, user.id);
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/e77bc13f-e7c1-4706-97a3-e965fe962aa8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'+server.ts:95',message:'drawCardFromPack result',data:{packId,success:drawResult.success,cardUuid:drawResult.card?.card_uuid,cardName:drawResult.card?.card_name,error:drawResult.error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
 
     if (!drawResult.success || !drawResult.card) {
       // Refund Rips if draw failed
@@ -105,26 +112,16 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
     const card = drawResult.card;
 
-    // Use real card UUID from database if available, otherwise generate placeholder
-    // This ensures we can reference the actual card in mtg_cards table
-    const cardUuid = card.card_uuid || crypto.randomUUID();
-
-    // Extract image URL if available
-    let cardImageUrl: string | null = null;
-    if (card.card_image_url) {
-      cardImageUrl = card.card_image_url;
-    }
+    // Ensure value_cents is an integer (round to nearest cent)
+    const valueCents = Math.round(card.value_cents);
 
     // Prepare card data for pack_openings.cards_pulled JSONB
-    // Use tier name as fallback for card name if not provided
-    const cardName = card.card_name || `${card.tier_name} Card`;
+    const cardName = card.card_name || "Unknown Card";
     const cardData = {
-      card_uuid: cardUuid,
-      tier_id: card.tier_id,
-      tier_name: card.tier_name,
-      value_cents: card.value_cents,
+      card_uuid: card.card_uuid,
+      value_cents: valueCents,
       card_name: cardName,
-      card_image_url: cardImageUrl,
+      card_image_url: card.card_image_url || null,
       set_name: card.set_name || null,
       set_code: card.set_code || null,
       rarity: card.rarity || null,
@@ -138,7 +135,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
         pack_id: packId,
         rips_spent: packCostRips,
         cards_pulled: [cardData], // JSONB array
-        total_value_cents: card.value_cents,
+        total_value_cents: valueCents,
       })
       .select()
       .single();
@@ -149,24 +146,23 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     }
 
     // Add card to user's inventory with all required fields
-    // Use the same cardName we computed earlier for consistency
     const { data: inventoryItem, error: inventoryError } = await adminClient
       .from("user_inventory")
       .insert({
         user_id: user.id,
         pack_opening_id: packOpening?.id,
-        card_uuid: cardUuid, // Use real card UUID from database
-        game_code: gameCode, // Required field
+        card_uuid: card.card_uuid,
+        game_code: gameCode,
         card_name: cardName,
-        card_image_url: cardImageUrl,
-        card_value_cents: card.value_cents,
-        tier_id: card.tier_id,
-        tier_name: card.tier_name,
+        card_image_url: card.card_image_url || null,
+        card_value_cents: valueCents,
+        tier_id: null, // No longer using tiers
+        tier_name: "N/A", // Placeholder for backward compatibility
         set_name: card.set_name || null,
         set_code: card.set_code || null,
         rarity: card.rarity || null,
-        is_foil: false, // Generic system doesn't track this
-        condition: "NM", // Default condition
+        is_foil: card.is_foil || false,
+        condition: card.condition || "NM",
       })
       .select()
       .single();
@@ -182,16 +178,14 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     }
 
     // Return success with card details
-    // Use the same cardName we computed earlier for consistency
     return json({
       success: true,
       card: {
         id: inventoryItem.id,
-        tier_name: card.tier_name,
-        value_cents: card.value_cents,
-        value_usd: (card.value_cents / 100).toFixed(2),
+        value_cents: valueCents,
+        value_usd: (valueCents / 100).toFixed(2),
         card_name: cardName,
-        card_image_url: cardImageUrl || inventoryItem.card_image_url || null,
+        card_image_url: card.card_image_url || inventoryItem.card_image_url || null,
         set_name: card.set_name || null,
         rarity: card.rarity || null,
       },

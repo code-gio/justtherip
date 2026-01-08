@@ -199,20 +199,12 @@ export async function getRipBundle(bundleId: string) {
 
 /**
  * Get card tiers for pack opening
+ * @deprecated Tier system has been removed. This function is no longer used.
  */
 export async function getCardTiers() {
-  const { data, error } = await supabaseAdmin
-    .from("card_tiers")
-    .select("*")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
-
-  if (error) {
-    console.error("Error fetching card tiers:", error);
-    return null;
-  }
-
-  return data;
+  // Tier system removed - this function is deprecated
+  console.warn("getCardTiers() is deprecated - tier system has been removed");
+  return null;
 }
 
 /**

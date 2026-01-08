@@ -3,54 +3,26 @@ import { adminClient } from "./rips";
 /**
  * Card Draw System
  *
- * Implements weighted random card drawing based on tier probabilities
- * with support for daily limits and max card value caps.
+ * Implements inverse-power probability distribution for card selection
+ * based on market values: P_i = (1/v_i^k) / sum(1/v_j^k)
  */
 
-export interface CardTier {
-  id: string;
-  name: string;
-  default_probability: number;
-  min_value_cents: number;
-  max_value_cents: number;
-  color_hex: string;
-  description: string;
-}
-
 export interface DrawnCard {
-  tier_id: string;
-  tier_name: string;
+  card_uuid: string;
+  card_name: string;
   value_cents: number;
-  card_uuid?: string;
-  card_name?: string;
   card_image_url?: string;
   set_name?: string;
   set_code?: string;
   rarity?: string;
+  is_foil?: boolean;
+  condition?: string;
 }
 
 export interface DrawResult {
   success: boolean;
   card?: DrawnCard;
   error?: string;
-}
-
-/**
- * Get all card tiers with their probabilities
- */
-export async function getCardTiers(): Promise<CardTier[]> {
-  const { data, error } = await adminClient
-    .from("card_tiers")
-    .select("*")
-    .eq("is_active", true)
-    .order("default_probability", { ascending: false });
-
-  if (error) {
-    console.error("Error fetching card tiers:", error);
-    return [];
-  }
-
-  return data || [];
 }
 
 /**
@@ -68,168 +40,11 @@ async function getSystemConfig(key: string): Promise<string | null> {
     return null;
   }
 
-  return data.value;
-}
-
-/**
- * Check if user has reached daily ultra-chase limit
- */
-async function hasReachedDailyUltraChaseLimit(
-  userId: string
-): Promise<boolean> {
-  const limitStr = await getSystemConfig("daily_ultra_chase_limit");
-  const dailyLimit = limitStr ? parseInt(limitStr, 10) : 1;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const { data, error } = await adminClient
-    .from("pack_openings")
-    .select("cards_pulled")
-    .eq("user_id", userId)
-    .gte("created_at", today.toISOString());
-
-  if (error) {
-    console.error("Error checking ultra-chase limit:", error);
-    return false;
+  // Handle both JSONB and string values
+  if (typeof data.value === "object") {
+    return String(data.value);
   }
-
-  // Count Ultra Chase cards from cards_pulled JSONB array
-  const ultraChaseCount = (data || []).reduce((count, opening) => {
-    const cards = opening.cards_pulled || [];
-    const ultraChaseCards = cards.filter(
-      (card: any) => card.tier_name === "Ultra Chase"
-    );
-    return count + ultraChaseCards.length;
-  }, 0);
-
-  return ultraChaseCount >= dailyLimit;
-}
-
-/**
- * Perform weighted random selection from card tiers
- */
-function selectTierByProbability(tiers: CardTier[]): CardTier {
-  // Validate probabilities sum to ~1.0
-  const totalProbability = tiers.reduce(
-    (sum, tier) => sum + tier.default_probability,
-    0
-  );
-
-  if (Math.abs(totalProbability - 1.0) > 0.01) {
-    console.warn(
-      `Tier probabilities sum to ${totalProbability}, expected 1.0. Normalizing...`
-    );
-  }
-
-  const random = Math.random();
-  let cumulative = 0;
-
-  for (const tier of tiers) {
-    cumulative += tier.default_probability;
-    if (random <= cumulative) {
-      return tier;
-    }
-  }
-
-  // Fallback to most common tier (should never happen with correct probabilities)
-  return tiers[0];
-}
-
-/**
- * Generate a random card value within the tier's range
- * Applies max card value cap from system config
- */
-async function generateCardValue(tier: CardTier): Promise<number> {
-  const maxCardValueStr = await getSystemConfig("max_card_value_cents");
-  const maxCardValueCents = maxCardValueStr
-    ? parseInt(maxCardValueStr, 10)
-    : 50000; // Default $500
-
-  // Generate random value within tier range
-  const range = tier.max_value_cents - tier.min_value_cents;
-  let valueCents = tier.min_value_cents + Math.floor(Math.random() * range);
-
-  // Apply max card value cap
-  valueCents = Math.min(valueCents, maxCardValueCents);
-
-  return valueCents;
-}
-
-/**
- * Fetch a random card from mtg_cards table based on value range
- * Returns card data with extracted image URL
- */
-async function fetchRandomCardFromDatabase(
-  minValueCents: number,
-  maxValueCents: number
-): Promise<{
-  id: string;
-  name: string;
-  image_url: string | null;
-  set_name: string | null;
-  set_code: string | null;
-  rarity: string | null;
-} | null> {
-  try {
-    // Fetch a reasonable sample of cards that might match the value range
-    // We'll filter by price in memory since prices are stored as JSONB
-    const { data: cards, error } = await adminClient
-      .from("mtg_cards")
-      .select("id, name, image_uri, set_name, set_code, rarity, prices")
-      .limit(10000); // Limit to prevent memory issues
-
-    if (error) {
-      console.error("Error fetching cards from database:", error);
-      return null;
-    }
-
-    if (!cards || cards.length === 0) {
-      console.warn("No cards found in database");
-      return null;
-    }
-
-    // Filter cards by price range
-    const matchingCards = cards.filter((card: any) => {
-      const prices = card.prices || {};
-      const usdPrice = parseFloat(prices.usd || "0");
-      const usdFoilPrice = parseFloat(prices.usd_foil || "0");
-      const priceCents = Math.max(usdPrice, usdFoilPrice) * 100;
-
-      return priceCents >= minValueCents && priceCents <= maxValueCents;
-    });
-
-    if (matchingCards.length === 0) {
-      // If no cards match the exact range, use cards within a broader range
-      const broaderMin = Math.max(0, minValueCents - minValueCents * 0.5);
-      const broaderMax = maxValueCents + maxValueCents * 0.5;
-      const broaderMatching = cards.filter((card: any) => {
-        const prices = card.prices || {};
-        const usdPrice = parseFloat(prices.usd || "0");
-        const usdFoilPrice = parseFloat(prices.usd_foil || "0");
-        const priceCents = Math.max(usdPrice, usdFoilPrice) * 100;
-        return priceCents >= broaderMin && priceCents <= broaderMax;
-      });
-
-      if (broaderMatching.length === 0) {
-        // Fallback: use any card
-        const randomCard = cards[Math.floor(Math.random() * cards.length)];
-        return extractCardData(randomCard);
-      }
-
-      const randomCard =
-        broaderMatching[Math.floor(Math.random() * broaderMatching.length)];
-      return extractCardData(randomCard);
-    }
-
-    // Select a random card from matching cards
-    const randomCard =
-      matchingCards[Math.floor(Math.random() * matchingCards.length)];
-    return extractCardData(randomCard);
-  } catch (error) {
-    console.error("Error fetching random card:", error);
-    return null;
-  }
+  return String(data.value);
 }
 
 /**
@@ -270,81 +85,214 @@ function extractCardData(card: any): {
 }
 
 /**
- * Draw a card from the available tiers
- *
- * This implements the core card draw algorithm with:
- * - Weighted random selection based on tier probabilities
- * - Daily ultra-chase limit enforcement
- * - Max card value cap enforcement
+ * Calculate probabilities for all cards using inverse-power distribution
+ * Formula: P_i = (1/v_i^k) / sum(1/v_j^k)
  */
-export async function drawCard(userId: string): Promise<DrawResult> {
+function calculateProbabilities(
+  cards: Array<{ market_value: number }>,
+  k: number
+): Array<{ weight: number; probability: number }> {
+  // Calculate weights: w_i = 1 / (v_i^k)
+  const weights = cards.map((card) => {
+    const value = Math.max(card.market_value, 1); // Avoid division by zero
+    return 1 / Math.pow(value, k);
+  });
+
+  // Calculate total weight
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+
+  // Normalize to probabilities
+  return weights.map((weight) => ({
+    weight,
+    probability: weight / totalWeight,
+  }));
+}
+
+/**
+ * Select a card using weighted random selection based on probabilities
+ */
+function selectCardByProbability<T extends { market_value: number }>(
+  cards: T[],
+  probabilities: Array<{ probability: number }>
+): T {
+  const random = Math.random();
+  let cumulative = 0;
+
+  for (let i = 0; i < cards.length; i++) {
+    cumulative += probabilities[i].probability;
+    if (random <= cumulative) {
+      return cards[i];
+    }
+  }
+
+  // Fallback to first card (should never happen with correct probabilities)
+  return cards[0];
+}
+
+/**
+ * Draw a card from a specific pack using inverse-power probability distribution
+ *
+ * This implements the core card draw algorithm:
+ * - Fetches all cards assigned to the pack
+ * - Calculates weights based on market values: w_i = 1 / (v_i^k)
+ * - Normalizes to probabilities: P_i = w_i / sum(w_j)
+ * - Uses weighted random selection to pick a card
+ */
+export async function drawCardFromPack(
+  packId: string,
+  userId: string
+): Promise<DrawResult> {
   try {
-    // Get all active tiers
-    const tiers = await getCardTiers();
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/e77bc13f-e7c1-4706-97a3-e965fe962aa8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'card-draw.ts:141',message:'drawCardFromPack entry',data:{packId,userId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
 
-    if (tiers.length === 0) {
+    // Get k parameter from system config (default: 1.1)
+    const kStr = await getSystemConfig("probability_curvature_k");
+    const k = kStr ? parseFloat(kStr) : 1.1;
+
+    // Fetch pack to get game_code
+    const { data: pack, error: packError } = await adminClient
+      .from("packs")
+      .select("id, game_code, is_active")
+      .eq("id", packId)
+      .single();
+
+    if (packError || !pack) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/e77bc13f-e7c1-4706-97a3-e965fe962aa8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'card-draw.ts:157',message:'Pack not found',data:{packId,packError},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       return {
         success: false,
-        error: "No card tiers available",
+        error: "Pack not found",
       };
     }
 
-    // Check ultra-chase limit
-    const reachedLimit = await hasReachedDailyUltraChaseLimit(userId);
-
-    // Filter out Ultra Chase tier if limit reached
-    const availableTiers = reachedLimit
-      ? tiers.filter((t) => t.name !== "Ultra Chase")
-      : tiers;
-
-    if (availableTiers.length === 0) {
+    if (!pack.is_active) {
       return {
         success: false,
-        error: "No available tiers (ultra-chase limit reached)",
+        error: "Pack is not active",
       };
     }
 
-    // Normalize probabilities if we filtered out Ultra Chase
-    if (availableTiers.length < tiers.length) {
-      const totalProb = availableTiers.reduce(
-        (sum, t) => sum + t.default_probability,
-        0
-      );
-      availableTiers.forEach((t) => {
-        t.default_probability = t.default_probability / totalProb;
-      });
+    const gameCode = pack.game_code || "mtg";
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/e77bc13f-e7c1-4706-97a3-e965fe962aa8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'card-draw.ts:171',message:'Pack fetched',data:{packId,gameCode,packIsActive:pack.is_active},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+
+    // Fetch all pack cards
+    const { data: packCards, error: packCardsError } = await adminClient
+      .from("pack_cards")
+      .select("*")
+      .eq("pack_id", packId);
+
+    if (packCardsError) {
+      console.error("Error fetching pack cards:", packCardsError);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/e77bc13f-e7c1-4706-97a3-e965fe962aa8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'card-draw.ts:179',message:'Error fetching pack cards',data:{packId,packCardsError},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+      return {
+        success: false,
+        error: "Failed to fetch pack cards",
+      };
     }
 
-    // Select tier using weighted random
-    const selectedTier = selectTierByProbability(availableTiers);
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/e77bc13f-e7c1-4706-97a3-e965fe962aa8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'card-draw.ts:187',message:'Pack cards fetched',data:{packId,packCardsCount:packCards?.length||0,packCards:packCards?.map((pc:any)=>({card_uuid:pc.card_uuid,pack_id:pc.pack_id,market_value:pc.market_value}))||[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
 
-    // Generate card value within tier range (with max cap)
-    const valueCents = await generateCardValue(selectedTier);
+    if (!packCards || packCards.length === 0) {
+      return {
+        success: false,
+        error: "Pack has no cards assigned",
+      };
+    }
 
-    // Fetch a random card from the database that matches the tier's value range
-    const cardData = await fetchRandomCardFromDatabase(
-      selectedTier.min_value_cents,
-      selectedTier.max_value_cents
+    // Filter out cards with invalid market values
+    const validCards = packCards.filter(
+      (pc: any) => pc.market_value && pc.market_value > 0
     );
 
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/e77bc13f-e7c1-4706-97a3-e965fe962aa8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'card-draw.ts:195',message:'Valid cards filtered',data:{packId,validCardsCount:validCards.length,validCardUuids:validCards.map((pc:any)=>pc.card_uuid)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
+
+    if (validCards.length === 0) {
+      return {
+        success: false,
+        error: "Pack has no cards with valid market values",
+      };
+    }
+
+    // Calculate probabilities for all cards
+    const probabilities = calculateProbabilities(validCards, k);
+
+    // Select a card using weighted random
+    const selectedPackCard = selectCardByProbability(validCards, probabilities);
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/e77bc13f-e7c1-4706-97a3-e965fe962aa8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'card-draw.ts:210',message:'Card selected',data:{packId,selectedCardUuid:selectedPackCard.card_uuid,selectedCardPackId:selectedPackCard.pack_id,selectedCardMarketValue:selectedPackCard.market_value},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
+
+    // Fetch the actual card data from the game-specific table
+    const cardTable = `${gameCode}_cards`;
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/e77bc13f-e7c1-4706-97a3-e965fe962aa8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'card-draw.ts:214',message:'Fetching card data from game table',data:{packId,gameCode,cardTable,cardUuid:selectedPackCard.card_uuid},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
+    const { data: cardData, error: cardError } = await adminClient
+      .from(cardTable)
+      .select("id, name, image_uri, set_name, set_code, rarity")
+      .eq("id", selectedPackCard.card_uuid)
+      .single();
+
+    if (cardError || !cardData) {
+      console.error("Error fetching card data:", cardError);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/e77bc13f-e7c1-4706-97a3-e965fe962aa8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'card-draw.ts:220',message:'Error fetching card data',data:{packId,cardUuid:selectedPackCard.card_uuid,cardError},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+      return {
+        success: false,
+        error: "Failed to fetch card data",
+      };
+    }
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/e77bc13f-e7c1-4706-97a3-e965fe962aa8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'card-draw.ts:228',message:'Card data fetched',data:{packId,cardUuid:selectedPackCard.card_uuid,cardId:cardData.id,cardName:cardData.name,cardSetName:cardData.set_name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
+
+    // Extract card information
+    const extracted = extractCardData(cardData);
+
+    // Build drawn card object
     const drawnCard: DrawnCard = {
-      tier_id: selectedTier.id,
-      tier_name: selectedTier.name,
-      value_cents: valueCents,
-      card_uuid: cardData?.id,
-      card_name: cardData?.name,
-      card_image_url: cardData?.image_url || undefined,
-      set_name: cardData?.set_name || undefined,
-      set_code: cardData?.set_code || undefined,
-      rarity: cardData?.rarity || undefined,
+      card_uuid: selectedPackCard.card_uuid,
+      card_name: extracted.name,
+      value_cents: selectedPackCard.market_value,
+      card_image_url: extracted.image_url || undefined,
+      set_name: extracted.set_name || undefined,
+      set_code: extracted.set_code || undefined,
+      rarity: extracted.rarity || undefined,
+      is_foil: selectedPackCard.is_foil || undefined,
+      condition: selectedPackCard.condition || undefined,
     };
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/e77bc13f-e7c1-4706-97a3-e965fe962aa8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'card-draw.ts:244',message:'Drawn card result',data:{packId,cardUuid:drawnCard.card_uuid,cardName:drawnCard.card_name,valueCents:drawnCard.value_cents,setName:drawnCard.set_name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+
+    // Verify the drawn card is actually in the pack
+    const cardInPack = packCards.find((pc: any) => pc.card_uuid === drawnCard.card_uuid && pc.pack_id === packId);
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/e77bc13f-e7c1-4706-97a3-e965fe962aa8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'card-draw.ts:250',message:'Verification: card in pack check',data:{packId,cardUuid:drawnCard.card_uuid,cardInPack:!!cardInPack,selectedPackCardPackId:selectedPackCard.pack_id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
 
     return {
       success: true,
       card: drawnCard,
     };
   } catch (error) {
-    console.error("Error drawing card:", error);
+    console.error("Error drawing card from pack:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -368,4 +316,53 @@ export async function calculateSellbackValue(
   const rips = sellbackCents / 100;
 
   return rips;
+}
+
+/**
+ * Calculate probabilities for all cards in a pack
+ * Returns array of cards with their calculated probabilities
+ */
+export async function calculatePackCardProbabilities(
+  packId: string
+): Promise<
+  Array<{
+    card_uuid: string;
+    market_value: number;
+    probability: number;
+    weight: number;
+  }>
+> {
+  // Get k parameter
+  const kStr = await getSystemConfig("probability_curvature_k");
+  const k = kStr ? parseFloat(kStr) : 1.1;
+
+  // Fetch pack cards
+  const { data: packCards, error } = await adminClient
+    .from("pack_cards")
+    .select("card_uuid, market_value")
+    .eq("pack_id", packId);
+
+  if (error || !packCards || packCards.length === 0) {
+    return [];
+  }
+
+  // Filter valid cards
+  const validCards = packCards.filter(
+    (pc: any) => pc.market_value && pc.market_value > 0
+  );
+
+  if (validCards.length === 0) {
+    return [];
+  }
+
+  // Calculate probabilities
+  const probabilities = calculateProbabilities(validCards, k);
+
+  // Combine with card data
+  return validCards.map((card: any, index: number) => ({
+    card_uuid: card.card_uuid,
+    market_value: card.market_value,
+    probability: probabilities[index].probability,
+    weight: probabilities[index].weight,
+  }));
 }

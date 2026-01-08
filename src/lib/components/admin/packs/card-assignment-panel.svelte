@@ -9,13 +9,6 @@
   import AssignedCardItem from "./card-assignment/assigned-card-item.svelte";
   import CardImageDialog from "./card-assignment/card-image-dialog.svelte";
 
-  interface CardTier {
-    id: string;
-    name: string;
-    min_value_cents: number;
-    max_value_cents: number;
-  }
-
   interface Card {
     id: string;
     name: string;
@@ -39,8 +32,6 @@
 
   interface PackCard {
     card_uuid: string;
-    tier_id: string;
-    odds: number;
     market_value: number;
     is_foil: boolean;
     condition: string;
@@ -69,20 +60,16 @@
 
   let {
     gameCode,
-    tier,
     packId,
     assignedCards = [],
     onAddCard,
     onRemoveCard,
-    onUpdateCardOdds,
   }: {
     gameCode: string;
-    tier: CardTier;
     packId: string;
     assignedCards?: PackCard[];
-    onAddCard?: (card: Card, tierId: string) => void;
+    onAddCard?: (card: Card) => void;
     onRemoveCard?: (cardId: string) => void;
-    onUpdateCardOdds?: (cardId: string, odds: number) => void;
   } = $props();
 
   let searchQuery = $state("");
@@ -154,15 +141,17 @@
 
   async function loadCards(page: number = 1, reset: boolean = false) {
     if (isLoading) return;
+    
+    // Don't load if gameCode is not set
+    if (!gameCode) {
+      return;
+    }
 
     isLoading = true;
     try {
       const params = new URLSearchParams({
         game_code: gameCode,
-        tier_id: tier.id,
         page: page.toString(),
-        min_value_cents: tier.min_value_cents.toString(),
-        max_value_cents: tier.max_value_cents.toString(),
         pack_id: packId,
       });
 
@@ -199,6 +188,11 @@
       clearTimeout(searchTimeout);
     }
 
+    // Don't search if gameCode is not set
+    if (!gameCode) {
+      return;
+    }
+
     searchTimeout = setTimeout(() => {
       currentPage = 1;
       loadCards(1, true);
@@ -212,21 +206,14 @@
   }
 
   function handleAddCard(card: Card) {
-    const priceCents = getCardPrice(card);
     if (onAddCard) {
-      onAddCard(card, tier.id);
+      onAddCard(card);
     }
   }
 
   function handleRemoveCard(cardId: string) {
     if (onRemoveCard) {
       onRemoveCard(cardId);
-    }
-  }
-
-  function handleUpdateOdds(cardId: string, odds: number) {
-    if (onUpdateCardOdds) {
-      onUpdateCardOdds(cardId, odds);
     }
   }
 
@@ -238,47 +225,53 @@
     return assignedCards.find((ac) => ac.card_uuid === cardUuid);
   }
 
-  // Load initial cards
-  onMount(() => {
-    loadCards(1, true);
+  let hasLoadedInitial = $state(false);
+
+  // Load initial cards when gameCode is available (only once)
+  $effect(() => {
+    if (gameCode && !hasLoadedInitial) {
+      hasLoadedInitial = true;
+      loadCards(1, true);
+    }
   });
 
-  // Reload when search query changes
+  // Reload when search query changes (only if gameCode is set and we've loaded initially)
+  let lastSearchQuery = $state("");
   $effect(() => {
-    if (searchQuery !== undefined) {
+    if (gameCode && hasLoadedInitial && searchQuery !== undefined && searchQuery !== lastSearchQuery) {
+      lastSearchQuery = searchQuery;
       handleSearch();
     }
   });
 </script>
 
-<div class="space-y-4">
-  <div class="space-y-2">
-    <Label>
-      Search Cards ({formatPrice(tier.min_value_cents)} - {formatPrice(tier.max_value_cents)})
-    </Label>
-    <div class="relative">
-      <IconSearch
-        size={18}
-        class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-      />
-      <Input
-        bind:value={searchQuery}
-        placeholder="Search by name..."
-        class="pl-9"
-      />
-    </div>
-    {#if totalCards > 0}
-      <p class="text-xs text-muted-foreground">
-        Found {totalCards} card{totalCards !== 1 ? "s" : ""}
-      </p>
-    {/if}
-  </div>
-
+  <div class="space-y-4">
   <div class="grid grid-cols-2 gap-4">
     <!-- Available Cards -->
-    <div class="space-y-2">
+    <div class="flex flex-col space-y-2">
       <h4 class="font-semibold text-sm">Available Cards</h4>
-      <div class="max-h-[600px] overflow-y-auto">
+      <div class="space-y-2">
+        <Label>
+          Search Cards
+        </Label>
+        <div class="relative">
+          <IconSearch
+            size={18}
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            bind:value={searchQuery}
+            placeholder="Search by name..."
+            class="pl-9"
+          />
+        </div>
+        {#if totalCards > 0}
+          <p class="text-xs text-muted-foreground">
+            Found {totalCards} card{totalCards !== 1 ? "s" : ""}
+          </p>
+        {/if}
+      </div>
+      <div class="h-[600px] overflow-y-auto">
         {#if isLoading && cards.length === 0}
           <div class="flex items-center justify-center py-8">
             <IconLoader2 size={24} class="animate-spin text-muted-foreground" />
@@ -324,24 +317,25 @@
     </div>
 
     <!-- Assigned Cards -->
-    <div class="space-y-2">
-      <h4 class="font-semibold text-sm">Assigned to {tier.name}</h4>
-      <div class="space-y-2 max-h-[600px] overflow-y-auto">
+    <div class="flex flex-col space-y-2">
+      <h4 class="font-semibold text-sm">Assigned Cards</h4>
+      <div class="h-[690px] overflow-y-auto">
         {#if assignedCards.length === 0}
           <div class="border rounded-lg p-8 text-center text-muted-foreground">
             <p class="text-sm">No cards assigned yet</p>
           </div>
         {:else}
-          {#each assignedCards as packCard (packCard.card_uuid)}
-            {@const cardData = getCardDataForAssignedCard(packCard)}
-            <AssignedCardItem
-              {packCard}
-              {cardData}
-              priceFormatted={formatPrice(packCard.market_value)}
-              onUpdateOdds={handleUpdateOdds}
-              onRemoveCard={handleRemoveCard}
-            />
-          {/each}
+          <div class="bg-muted-foreground/10 p-4 rounded grid grid-cols-3 gap-2">
+            {#each assignedCards as packCard (packCard.card_uuid)}
+              {@const cardData = getCardDataForAssignedCard(packCard)}
+              <AssignedCardItem
+                {packCard}
+                {cardData}
+                priceFormatted={formatPrice(packCard.market_value)}
+                onRemoveCard={handleRemoveCard}
+              />
+            {/each}
+          </div>
         {/if}
       </div>
     </div>

@@ -11,23 +11,13 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
   const packId = params.id;
 
-  // Fetch pack data, card tiers, pack tiers, and pack cards in parallel
-  const [packResult, cardTiersResult, packTiersResult, packCardsResult] = await Promise.all([
+  // Fetch pack data and pack cards in parallel
+  const [packResult, packCardsResult] = await Promise.all([
     adminClient
       .from("packs")
       .select("*")
       .eq("id", packId)
       .single(),
-    adminClient
-      .from("card_tiers")
-      .select("*")
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true }),
-    adminClient
-      .from("pack_tiers")
-      .select("*")
-      .eq("pack_id", packId)
-      .order("display_order", { ascending: true }),
     adminClient
       .from("pack_cards")
       .select("*")
@@ -39,21 +29,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     throw error(404, "Pack not found");
   }
 
-  if (cardTiersResult.error) {
-    console.error("Error fetching card tiers:", cardTiersResult.error);
-  }
-
-  if (packTiersResult.error) {
-    console.error("Error fetching pack tiers:", packTiersResult.error);
-  }
-
   if (packCardsResult.error) {
     console.error("Error fetching pack cards:", packCardsResult.error);
   }
 
   const pack = packResult.data;
-  const cardTiers = cardTiersResult.data || [];
-  const packTiers = packTiersResult.data || [];
   const packCards = packCardsResult.data || [];
 
   // Fetch card data for assigned cards
@@ -106,8 +86,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     // Return plain object, ensure no functions or reactive values
     return {
       card_uuid: pc.card_uuid,
-      tier_id: pc.tier_id,
-      odds: pc.odds,
       market_value: pc.market_value,
       is_foil: pc.is_foil,
       condition: pc.condition,
@@ -127,8 +105,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
   return {
     pack,
-    cardTiers,
-    packTiers,
     packCards: packCardsWithData,
   };
 };
@@ -170,45 +146,11 @@ export const actions = {
       return { success: false, error: packError.message };
     }
 
-    // Parse pack tiers (JSON array)
-    const packTiersJson = formData.get("pack_tiers") as string;
-    if (packTiersJson) {
-      const packTiers = JSON.parse(packTiersJson) as Array<{
-        tier_id: string;
-        probability: number;
-        display_order: number;
-      }>;
-
-      // Delete existing pack tiers
-      await adminClient.from("pack_tiers").delete().eq("pack_id", packId);
-
-      // Insert new pack tiers
-      if (packTiers.length > 0) {
-        const { error: tiersError } = await adminClient
-          .from("pack_tiers")
-          .insert(
-            packTiers.map((pt, index) => ({
-              pack_id: packId,
-              tier_id: pt.tier_id,
-              probability: pt.probability,
-              display_order: pt.display_order ?? index,
-            }))
-          );
-
-        if (tiersError) {
-          console.error("Error updating pack tiers:", tiersError);
-          return { success: false, error: tiersError.message };
-        }
-      }
-    }
-
     // Parse pack cards (JSON array)
     const packCardsJson = formData.get("pack_cards") as string;
     if (packCardsJson) {
       const packCards = JSON.parse(packCardsJson) as Array<{
         card_uuid: string;
-        tier_id: string;
-        odds: number;
         market_value: number;
         is_foil: boolean;
         condition: string;
@@ -230,8 +172,6 @@ export const actions = {
               game_code: game_code,
               card_table: cardTable,
               card_uuid: pc.card_uuid,
-              tier_id: pc.tier_id,
-              odds: pc.odds,
               market_value: pc.market_value,
               is_foil: pc.is_foil,
               condition: pc.condition,
@@ -285,45 +225,11 @@ export const actions = {
       return { success: false, error: packError.message };
     }
 
-    // Parse pack tiers (JSON array)
-    const packTiersJson = formData.get("pack_tiers") as string;
-    if (packTiersJson) {
-      const packTiers = JSON.parse(packTiersJson) as Array<{
-        tier_id: string;
-        probability: number;
-        display_order: number;
-      }>;
-
-      // Delete existing pack tiers
-      await adminClient.from("pack_tiers").delete().eq("pack_id", packId);
-
-      // Insert new pack tiers
-      if (packTiers.length > 0) {
-        const { error: tiersError } = await adminClient
-          .from("pack_tiers")
-          .insert(
-            packTiers.map((pt, index) => ({
-              pack_id: packId,
-              tier_id: pt.tier_id,
-              probability: pt.probability,
-              display_order: pt.display_order ?? index,
-            }))
-          );
-
-        if (tiersError) {
-          console.error("Error updating pack tiers:", tiersError);
-          return { success: false, error: tiersError.message };
-        }
-      }
-    }
-
     // Parse pack cards (JSON array)
     const packCardsJson = formData.get("pack_cards") as string;
     if (packCardsJson) {
       const packCards = JSON.parse(packCardsJson) as Array<{
         card_uuid: string;
-        tier_id: string;
-        odds: number;
         market_value: number;
         is_foil: boolean;
         condition: string;
@@ -345,8 +251,6 @@ export const actions = {
               game_code: game_code,
               card_table: cardTable,
               card_uuid: pc.card_uuid,
-              tier_id: pc.tier_id,
-              odds: pc.odds,
               market_value: pc.market_value,
               is_foil: pc.is_foil,
               condition: pc.condition,

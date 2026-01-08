@@ -11,7 +11,6 @@ const CARDS_PER_PAGE = 50;
  * 
  * Query params:
  * - game_code: 'mtg', 'pokemon', etc.
- * - tier_id: UUID of card tier (for value range filtering)
  * - search: search query (card name)
  * - page: page number (default 1)
  * - min_value_cents: minimum card value in cents
@@ -26,7 +25,6 @@ export const GET: RequestHandler = async ({ url, locals }) => {
   }
 
   const gameCode = url.searchParams.get("game_code");
-  const tierId = url.searchParams.get("tier_id");
   const searchQuery = url.searchParams.get("search") || "";
   const page = parseInt(url.searchParams.get("page") || "1");
   const minValueCents = parseInt(url.searchParams.get("min_value_cents") || "0");
@@ -37,23 +35,9 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     return json({ error: "game_code is required" }, { status: 400 });
   }
 
-  if (!tierId) {
-    return json({ error: "tier_id is required" }, { status: 400 });
-  }
-
-  // Get tier info for value range
-  const { data: tier, error: tierError } = await adminClient
-    .from("card_tiers")
-    .select("min_value_cents, max_value_cents")
-    .eq("id", tierId)
-    .single();
-
-  if (tierError || !tier) {
-    return json({ error: "Invalid tier" }, { status: 400 });
-  }
-
-  const effectiveMinValue = minValueCents || tier.min_value_cents;
-  const effectiveMaxValue = maxValueCents || tier.max_value_cents;
+  // Use provided value range directly (no tier filtering)
+  const effectiveMinValue = minValueCents;
+  const effectiveMaxValue = maxValueCents;
 
   // Determine table name based on game
   const tableName = `${gameCode}_cards`;
@@ -65,10 +49,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     if (packId) {
       const { data: assignedCards } = await adminClient
         .from("pack_cards")
-        .select("card_id")
+        .select("card_uuid")
         .eq("pack_id", packId);
 
-      assignedCardIds = (assignedCards || []).map((ac) => ac.card_id);
+      assignedCardIds = (assignedCards || []).map((ac) => ac.card_uuid);
     }
 
     // Build query based on game type

@@ -9,6 +9,7 @@
   } from "@tabler/icons-svelte";
   import { tweened } from "svelte/motion";
   import { cubicOut } from "svelte/easing";
+  import type { Writable } from "svelte/store";
   import ConfettiCanvas from "./confetti-canvas.svelte";
 
   interface Card {
@@ -60,10 +61,12 @@
   let confettiActive = $state(false);
   let carouselContainer = $state<HTMLDivElement | null>(null);
   let cardWidth = 240;
-  let cardGap = 24;
+  let cardGap = 32;
   let cardItemWidth = cardWidth + cardGap;
   let previousIsOpening = $state(false);
   let previousCard = $state<Card | null>(null);
+  let scrollAnimationId: number | null = null;
+  let scrollStartTime = $state(0);
 
   // Extract image URL from image_uri field
   function extractImageUrl(imageUri: any): string | null {
@@ -126,6 +129,20 @@
         return "from-blue-400 to-blue-600";
       default:
         return "from-slate-400 to-slate-600";
+    }
+  }
+
+  // Get rarity border color class
+  function getRarityBorder(category: RarityCategory): string {
+    switch (category) {
+      case "legendary":
+        return "border-rose-500";
+      case "epic":
+        return "border-amber-500";
+      case "rare":
+        return "border-blue-500";
+      default:
+        return "border-border";
     }
   }
 
@@ -205,8 +222,13 @@
   });
 
   $effect(() => {
-    // Handle card reveal
-    if (card && !isOpening && card !== previousCard && animationPhase !== "reveal") {
+    // Handle card received during animation - stop scrolling and decelerate
+    if (card && isOpening && card !== previousCard && animationPhase === "fast") {
+      previousCard = card;
+      stopScrollingAndDecelerate();
+    }
+    // Handle card reveal after opening completes
+    else if (card && !isOpening && card !== previousCard && animationPhase !== "reveal") {
       previousCard = card;
       const category = getRarityCategory(card.value_cents || 0);
       triggerRevealVFX(category);
@@ -220,106 +242,121 @@
     const duplicatedPool = createDuplicatedPool(cardPool, 4);
     const poolLength = duplicatedPool.length;
     const startIndex = Math.floor(poolLength / 2); // Start in middle of duplicated pool
+    const totalWidth = poolLength * cardItemWidth;
 
-    // Phase 1: Fast linear scroll (0-1.5s)
+    // Phase 1: Constant speed infinite scroll
     animationPhase = "fast";
-    const fastScrollDistance = 3000; // Scroll 3000px in 1.5s
-    const fastDuration = 1500;
-
     scrollPosition = startIndex * cardItemWidth;
+    scrollStartTime = performance.now();
+    
+    const scrollSpeed = 2000; // pixels per second (always positive, scrolling right)
+    let lastTime = scrollStartTime;
 
-    const fastTween = tweened(scrollPosition, {
-      duration: fastDuration,
-      easing: (t) => t, // Linear
-    });
+    const scrollLoop = () => {
+      const currentTime = performance.now();
+      const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
+      lastTime = currentTime;
 
-    fastTween.set(scrollPosition + fastScrollDistance);
+      // Continue scrolling at constant speed
+      scrollPosition += scrollSpeed * deltaTime;
 
-    fastTween.subscribe((value) => {
-      scrollPosition = value;
-    });
+      // Wrap around to create infinite scroll effect
+      // When we scroll past the end, wrap to the beginning (accounting for the duplicated pool)
+      if (scrollPosition >= totalWidth) {
+        scrollPosition = scrollPosition % totalWidth;
+      }
 
-    // Phase 2: Deceleration (1.5s-3.5s)
-    setTimeout(() => {
-      animationPhase = "decelerate";
-      const decelStart = scrollPosition;
-      const decelDistance = 2000; // Additional scroll during deceleration
-      const decelDuration = 2000;
+      // Continue the loop
+      scrollAnimationId = requestAnimationFrame(scrollLoop);
+    };
 
-      const decelTween = tweened(decelStart, {
-        duration: decelDuration,
+    // Start the scroll loop
+    scrollAnimationId = requestAnimationFrame(scrollLoop);
+  }
+
+  function stopScrollingAndDecelerate() {
+    if (scrollAnimationId !== null) {
+      cancelAnimationFrame(scrollAnimationId);
+      scrollAnimationId = null;
+    }
+
+    if (!cardPool.length || !card) return;
+
+    const duplicatedPool = createDuplicatedPool(cardPool, 4);
+    const poolLength = duplicatedPool.length;
+    const totalWidth = poolLength * cardItemWidth;
+    
+    // Phase 2: Calculate current position and decelerate to winning card
+    animationPhase = "decelerate";
+    
+    const winningIndex = findWinningCardIndex(duplicatedPool, card);
+    winningCardIndex = winningIndex;
+
+    if (carouselContainer) {
+      const containerWidth = carouselContainer.clientWidth;
+      
+      // Calculate target scroll position for the winning card
+      const targetCardPosition = winningIndex * cardItemWidth;
+      const centerOffset = containerWidth / 2 - cardWidth / 2;
+      let targetScroll = targetCardPosition - centerOffset;
+
+      // Normalize current scroll position (account for wrapping)
+      let currentScroll = scrollPosition % totalWidth;
+      if (currentScroll < 0) currentScroll += totalWidth;
+
+      // Calculate the shortest path to target, keeping the same direction (forward)
+      // Since we're always scrolling forward, we need to find the next occurrence
+      // of the winning card that's ahead of us
+      let distanceForward = targetScroll - currentScroll;
+      
+      // If target is behind us, wrap forward to the next occurrence
+      if (distanceForward < 0) {
+        distanceForward = (targetScroll + totalWidth) - currentScroll;
+      }
+      
+      // Ensure we're scrolling forward (positive distance)
+      const finalTarget = currentScroll + distanceForward;
+
+      // Decelerate to target position (always forward direction)
+      // Use tweened with initial value and options
+      const decelTween: Writable<number> = tweened(currentScroll, {
+        duration: 1500,
         easing: cubicOut,
+      }) as Writable<number>;
+
+      decelTween.set(finalTarget);
+
+      // Subscribe to tween updates
+      const unsubscribe = decelTween.subscribe((value) => {
+        // Keep wrapping to maintain infinite scroll feel
+        scrollPosition = value % totalWidth;
+        if (scrollPosition < 0) scrollPosition += totalWidth;
       });
 
-      decelTween.set(decelStart + decelDistance);
-
-      decelTween.subscribe((value) => {
-        scrollPosition = value;
-      });
-
-      // Phase 3: Lock onto winning card (3.5s-4s)
+      // Phase 3: Lock and reveal
       setTimeout(() => {
         animationPhase = "lock";
-        
-        // Wait for card to be available, or use a random card from pool
-        const checkCard = () => {
-          const targetCard = card || null;
-          const winningIndex = targetCard
-            ? findWinningCardIndex(duplicatedPool, targetCard)
-            : Math.floor(duplicatedPool.length / 2);
-          winningCardIndex = winningIndex;
-
-          if (carouselContainer) {
-            const containerWidth = carouselContainer.clientWidth;
-            const targetScroll = calculateWinningScrollPosition(
-              winningIndex,
-              poolLength,
-              containerWidth
-            );
-
-            const lockTween = tweened(scrollPosition, {
-              duration: 500,
-              easing: cubicOut,
-            });
-
-            lockTween.set(targetScroll);
-
-            lockTween.subscribe((value) => {
-              scrollPosition = value;
-            });
-
-            // Transition to reveal after lock completes
-            setTimeout(() => {
-              if (card) {
-                animationPhase = "reveal";
-                const category = getRarityCategory(card.value_cents || 0);
-                triggerRevealVFX(category);
-              }
-            }, 500);
-          }
-        };
-
-        // Check immediately, and also poll for card if not available
-        checkCard();
-        if (!card) {
-          const checkInterval = setInterval(() => {
-            if (card) {
-              clearInterval(checkInterval);
-              checkCard();
-            }
-          }, 100);
-          setTimeout(() => clearInterval(checkInterval), 2000);
-        }
-      }, decelDuration);
-    }, fastDuration);
+        setTimeout(() => {
+          animationPhase = "reveal";
+          const category = getRarityCategory(card.value_cents || 0);
+          triggerRevealVFX(category);
+        }, 300);
+      }, 1500);
+    }
   }
 
   function resetAnimation() {
+    // Stop any running scroll animation
+    if (scrollAnimationId !== null) {
+      cancelAnimationFrame(scrollAnimationId);
+      scrollAnimationId = null;
+    }
     animationPhase = "idle";
     scrollPosition = 0;
     winningCardIndex = -1;
     shakeOffset = { x: 0, y: 0 };
     confettiActive = false;
+    scrollStartTime = 0;
     // Note: Don't reset previousIsOpening or previousCard here
     // They are managed by the effects
   }
@@ -383,16 +420,16 @@
             {@const isFocused = Math.abs(index - winningCardIndex) < 3 && animationPhase === "lock"}
 
             <div
-              class="relative transition-all duration-300 flex-shrink-0 {isFocused
+              class="relative transition-all duration-300 shrink-0 {isFocused
                 ? "scale-110 z-10"
-                : "scale-100"} {animationPhase === "fast" ? "blur-sm" : "blur-0"}"
+                : "scale-100"}"
               style="width: {cardWidth}px; aspect-ratio: 2/3;"
             >
               <!-- Card Image -->
               <div
                 class="w-full h-full rounded-lg overflow-hidden border-2 {isWinning && animationPhase === "lock"
                   ? "border-yellow-400 shadow-2xl shadow-yellow-400/50"
-                  : "border-border"} bg-card"
+                  : getRarityBorder(rarity)}"
               >
                 {#if imageUrl}
                   <img
@@ -409,33 +446,13 @@
                 {/if}
               </div>
 
-              <!-- Rare+ Glint Effect -->
-              {#if isRarePlus && animationPhase !== "lock"}
-                <div
-                  class="absolute inset-0 rounded-lg pointer-events-none overflow-hidden"
-                >
-                  <div
-                    class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-glint"
-                    style="transform: translateX(-100%); animation: glint 2s infinite;"
-                  ></div>
-                </div>
-              {/if}
-
-              <!-- Glow for rare+ cards -->
-              {#if isRarePlus}
-                <div
-                  class="absolute -inset-1 rounded-lg opacity-50 blur-md bg-gradient-to-r {getRarityGradient(
-                    rarity
-                  )} pointer-events-none"
-                ></div>
-              {/if}
             </div>
           {/each}
         </div>
 
         <!-- Center Indicator -->
         <div
-          class="absolute left-1/2 top-0 -translate-x-1/2 w-2 border-x-2 border-yellow-400/50 pointer-events-none"
+          class="absolute left-1/2 top-0 -translate-x-1/2 w-2 border-x-2 border-primary/50 pointer-events-none"
           style="height: {cardWidth * 1.5 + 20}px;"
         ></div>
       </div>
@@ -512,12 +529,12 @@
               <img
                 src={card.card_image_url}
                 alt={card.card_name}
-                class="w-32 h-44 object-contain mb-4 rounded-lg"
+                class=" h-96 object-contain mb-4 rounded-lg"
               />
             {/if}
 
             <div
-              class="text-5xl sm:text-6xl font-black mb-4 bg-gradient-to-br {getValueGradient(
+              class="text-3xl sm:text-4xl font-black mb-4 bg-gradient-to-br {getValueGradient(
                 card.value_cents || 0
               )} bg-clip-text text-transparent"
             >

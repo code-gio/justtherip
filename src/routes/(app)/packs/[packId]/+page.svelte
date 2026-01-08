@@ -332,7 +332,7 @@
       <!-- All Cards Grid -->
       {#if pack.cards && pack.cards.length > 0}
         <div class="mt-12 space-y-4">
-          <div class="space-y-2">
+          <div class="space-y-2 text-center">
             <h2 class="text-2xl font-bold">What's Inside?</h2>
             <p class="text-muted-foreground">
               1 of the {pack.totalCards || pack.cards.length} cards below

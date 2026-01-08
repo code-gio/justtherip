@@ -6,8 +6,11 @@
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import type { ComponentProps } from "svelte";
   import { IconCards } from "@tabler/icons-svelte";
+  import { page } from "$app/state";
 
   let { ...restProps }: ComponentProps<typeof Sidebar.Root> = $props();
+
+  const isAdmin = $derived(page.data.profile?.is_admin ?? false);
 </script>
 
 <Sidebar.Root collapsible="offcanvas" {...restProps}>
@@ -27,7 +30,9 @@
   </Sidebar.Header>
   <Sidebar.Content>
     <NavMain />
-    <!--  <NavDocuments /> -->
+    {#if isAdmin}
+      <NavAdmin />
+    {/if}
     <NavSecondary class="mt-auto" />
   </Sidebar.Content>
   <Sidebar.Footer>

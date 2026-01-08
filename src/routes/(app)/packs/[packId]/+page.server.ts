@@ -4,6 +4,44 @@ import { adminClient } from "$lib/server/rips";
 import { getUserRipBalance } from "$lib/server/rips";
 import { calculatePackCardProbabilities } from "$lib/server/card-draw";
 
+/**
+ * Extract card image URL from image_uri field
+ */
+function extractCardImageUrl(imageUri: any): string | null {
+  if (!imageUri) return null;
+
+  if (typeof imageUri === "string") {
+    // Try to parse as JSON if it's a string
+    try {
+      const parsed = JSON.parse(imageUri);
+      if (typeof parsed === "object") {
+        return (
+          parsed.normal ||
+          parsed.large ||
+          parsed.png ||
+          parsed.small ||
+          null
+        );
+      }
+      return imageUri;
+    } catch {
+      return imageUri;
+    }
+  }
+
+  if (typeof imageUri === "object") {
+    return (
+      imageUri.normal ||
+      imageUri.large ||
+      imageUri.png ||
+      imageUri.small ||
+      null
+    );
+  }
+
+  return null;
+}
+
 export const load: PageServerLoad = async ({ params, locals }) => {
   const { session, user } = await locals.safeGetSession();
 
@@ -32,15 +70,20 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
   // Fetch all pack cards
   let allCards: any[] = [];
+  let topCards: any[] = [];
+  let floor = 0;
+  let ev = 0;
+  let ceiling = 0;
+
   if (pack.game_code) {
-    const { data: packCardsResult } = await adminClient
+    const packCardsResult = await adminClient
       .from("pack_cards")
       .select("*")
       .eq("pack_id", packId);
 
-    if (packCardsResult && packCardsResult.length > 0) {
+    if (packCardsResult.data && packCardsResult.data.length > 0) {
       const cardTable = `${pack.game_code}_cards`;
-      const cardUuids = packCardsResult.map((pc: any) => pc.card_uuid);
+      const cardUuids = packCardsResult.data.map((pc: any) => pc.card_uuid);
 
       if (cardUuids.length > 0) {
         const { data: cardsData } = await adminClient
@@ -71,7 +114,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
           });
 
           // Create flat array with calculated probabilities
-          packCardsResult.forEach((pc: any) => {
+          packCardsResult.data.forEach((pc: any) => {
             const cardData = cardDataMap.get(pc.card_uuid);
             if (cardData) {
               const probability = probabilityMap.get(pc.card_uuid) || 0;
@@ -90,6 +133,31 @@ export const load: PageServerLoad = async ({ params, locals }) => {
               });
             }
           });
+
+          // Calculate Floor, EV, and Ceiling
+          if (allCards.length > 0) {
+            // Floor: minimum market value
+            floor = Math.min(...allCards.map((c: any) => c.market_value || 0));
+            
+            // EV: sum of (probability * market_value)
+            ev = allCards.reduce((sum: number, c: any) => {
+              return sum + ((c.probability || 0) * (c.market_value || 0));
+            }, 0);
+            
+            // Ceiling: maximum market value
+            ceiling = Math.max(...allCards.map((c: any) => c.market_value || 0));
+
+            // Calculate top 3 cards from allCards
+            topCards = allCards
+              .sort((a, b) => (b.market_value || 0) - (a.market_value || 0))
+              .slice(0, 3)
+              .map((card: any) => ({
+                id: card.id,
+                name: card.name || "Unknown Card",
+                image_url: extractCardImageUrl(card.image_uri),
+                market_value: card.market_value,
+              }));
+          }
         }
       }
     }
@@ -106,6 +174,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       rip_cost: pack.rip_cost,
       total_openings: pack.total_openings || 0,
       cards: allCards,
+      topCards: topCards,
+      floor: floor,
+      ev: ev,
+      ceiling: ceiling,
+      totalCards: allCards.length,
     },
     balance: balance || 0,
   };

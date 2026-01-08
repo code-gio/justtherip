@@ -75,6 +75,7 @@
   let searchQuery = $state("");
   let cards = $state<Card[]>([]);
   let isLoading = $state(false);
+  let isSearching = $state(false);
   let currentPage = $state(1);
   let hasMore = $state(false);
   let totalCards = $state(0);
@@ -148,6 +149,9 @@
     }
 
     isLoading = true;
+    if (reset) {
+      isSearching = true;
+    }
     try {
       const params = new URLSearchParams({
         game_code: gameCode,
@@ -155,8 +159,10 @@
         pack_id: packId,
       });
 
-      if (searchQuery) {
-        params.append("search", searchQuery);
+      // Trim search query before sending
+      const trimmedQuery = searchQuery.trim();
+      if (trimmedQuery) {
+        params.append("search", trimmedQuery);
       }
 
       const response = await fetch(`/api/admin/cards/search?${params}`);
@@ -180,23 +186,8 @@
       console.error("Error loading cards:", error);
     } finally {
       isLoading = false;
+      isSearching = false;
     }
-  }
-
-  function handleSearch() {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-
-    // Don't search if gameCode is not set
-    if (!gameCode) {
-      return;
-    }
-
-    searchTimeout = setTimeout(() => {
-      currentPage = 1;
-      loadCards(1, true);
-    }, 500);
   }
 
   function handleLoadMore() {
@@ -235,13 +226,37 @@
     }
   });
 
-  // Reload when search query changes (only if gameCode is set and we've loaded initially)
+  // Debounced search when search query changes (only if gameCode is set and we've loaded initially)
   let lastSearchQuery = $state("");
   $effect(() => {
-    if (gameCode && hasLoadedInitial && searchQuery !== undefined && searchQuery !== lastSearchQuery) {
-      lastSearchQuery = searchQuery;
-      handleSearch();
+    if (!gameCode || !hasLoadedInitial) {
+      return;
     }
+
+    // Clear any existing timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    // Trim the search query for comparison
+    const trimmedQuery = searchQuery.trim();
+    
+    // Only search if the trimmed query has changed
+    if (trimmedQuery !== lastSearchQuery) {
+      // Debounce the search
+      searchTimeout = setTimeout(() => {
+        lastSearchQuery = trimmedQuery;
+        currentPage = 1;
+        loadCards(1, true);
+      }, 400);
+    }
+
+    // Cleanup function
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
   });
 </script>
 
@@ -255,19 +270,30 @@
           Search Cards
         </Label>
         <div class="relative">
-          <IconSearch
-            size={18}
-            class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-          />
+          {#if isSearching}
+            <IconLoader2
+              size={18}
+              class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground animate-spin"
+            />
+          {:else}
+            <IconSearch
+              size={18}
+              class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+          {/if}
           <Input
             bind:value={searchQuery}
             placeholder="Search by name..."
             class="pl-9"
           />
         </div>
-        {#if totalCards > 0}
+        {#if isSearching || (totalCards > 0 && searchQuery.trim())}
           <p class="text-xs text-muted-foreground">
-            Found {totalCards} card{totalCards !== 1 ? "s" : ""}
+            {#if isSearching}
+              Searching...
+            {:else}
+              Found {totalCards} card{totalCards !== 1 ? "s" : ""}
+            {/if}
           </p>
         {/if}
       </div>

@@ -1,24 +1,15 @@
 import { redirect, fail } from "@sveltejs/kit";
 import type { PageServerLoad, Actions } from "./$types";
 import { adminClient } from "$lib/server/rips";
+import { requireAdmin } from "$lib/server/auth";
 
 export const load: PageServerLoad = async ({ locals }) => {
+  // Admin check is handled by /admin/+layout.server.ts
   const { session, user } = await locals.safeGetSession();
 
   if (!session || !user) {
     throw redirect(303, "/sign-in");
   }
-
-  // TODO: Check if user is admin
-  // const { data: profile } = await locals.supabase
-  //   .from('profiles')
-  //   .select('is_admin')
-  //   .eq('id', user.id)
-  //   .single()
-  //
-  // if (!profile?.is_admin) {
-  //   throw redirect(303, '/')
-  // }
 
   // Fetch packs and games in parallel using admin client to bypass RLS
   const [packsResult, gamesResult] = await Promise.all([
@@ -72,6 +63,13 @@ export const actions = {
 
     if (!session || !user) {
       return fail(401, { success: false, error: "Unauthorized" });
+    }
+
+    // Check if user is admin
+    try {
+      await requireAdmin(user.id);
+    } catch (err) {
+      return fail(403, { success: false, error: "Forbidden: Admin access required" });
     }
 
     const formData = await request.formData();

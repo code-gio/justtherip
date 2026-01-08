@@ -25,7 +25,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
   }
 
   const gameCode = url.searchParams.get("game_code");
-  const searchQuery = url.searchParams.get("search") || "";
+  const rawSearchQuery = url.searchParams.get("search") || "";
+  const searchQuery = rawSearchQuery.trim();
   const page = parseInt(url.searchParams.get("page") || "1");
   const minValueCents = parseInt(url.searchParams.get("min_value_cents") || "0");
   const maxValueCents = parseInt(url.searchParams.get("max_value_cents") || "999999999");
@@ -60,7 +61,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
     // Handle MTG cards with JSONB prices field
     if (gameCode === "mtg") {
-      // Filter by search query first to reduce dataset
+      // Filter by search query first to reduce dataset (only if search query is not empty)
       if (searchQuery) {
         query = query.ilike("name", `%${searchQuery}%`);
       }
@@ -117,6 +118,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         .gte("market_value_cents", effectiveMinValue)
         .lte("market_value_cents", effectiveMaxValue);
 
+      // Apply search filter only if search query is not empty
       if (searchQuery) {
         query = query.ilike("name", `%${searchQuery}%`);
       }

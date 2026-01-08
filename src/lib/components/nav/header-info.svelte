@@ -23,7 +23,7 @@
           >1</span
         >
         <p class="text-muted-foreground">
-          Spend 1 Rip to open a pack and receive a random card
+          Each pack costs Rips to open and receive a random card
         </p>
       </div>
       <div class="flex gap-2">
@@ -32,7 +32,7 @@
           >2</span
         >
         <p class="text-muted-foreground">
-          Higher tiers are rarer but more valuable
+          Higher value cards are rarer
         </p>
       </div>
       <div class="flex gap-2">
@@ -41,15 +41,17 @@
           >3</span
         >
         <p class="text-muted-foreground">
-          Sell cards for 85% value or keep them
+          Sell cards for 85% value
         </p>
       </div>
       <div class="flex gap-2">
         <span
-          class="shrink-0 w-5 h-5 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 text-xs font-bold"
-          >!</span
+          class="shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold"
+          >4</span
         >
-        <p class="text-muted-foreground">Max 1 Ultra Chase per day</p>
+        <p class="text-muted-foreground">
+          Get shipped the card you want
+        </p>
       </div>
     </div>
   </DropdownMenu.Content>

@@ -12,6 +12,7 @@
   import type { PageData } from "./$types";
   import PackOpeningAnimation from "$lib/components/packs/opening/pack-opening-animation.svelte";
   import ShipCardDialog from "$lib/components/inventory/ship-card-dialog.svelte";
+  import FannedCards from "$lib/components/packs/fanned-cards.svelte";
 
   let { data }: { data: PageData } = $props();
   let { balance, pack } = $derived(data);
@@ -224,35 +225,63 @@
     <!-- Main Content -->
     <div class="px-6 pb-12 max-w-7xl mx-auto">
       <div class="max-w-md mx-auto space-y-6">
-        <!-- Pack Image -->
-        <div class="relative aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl">
-          {#if pack.image_url}
+        <!-- Pack Image or Fanned Cards -->
+        {#if pack.topCards && pack.topCards.length > 0}
+          <!-- Fanned Cards Display -->
+          <div class="relative aspect-square flex items-center justify-center">
+            <FannedCards cards={pack.topCards} />
+            <!-- Opening Overlay -->
+            {#if isOpening}
+              <div class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-3xl">
+                <div class="text-center">
+                  <IconLoader2
+                    size={64}
+                    class="text-white animate-spin mx-auto mb-4"
+                  />
+                  <p class="text-white text-xl font-bold">Opening...</p>
+                </div>
+              </div>
+            {/if}
+          </div>
+        {:else if pack.image_url}
+          <!-- Fallback to Pack Image -->
+          <div class="relative aspect-square rounded-3xl overflow-hidden shadow-2xl bg-muted">
             <img
               src={pack.image_url}
               alt={pack.name}
               class="w-full h-full object-cover"
             />
-          {:else}
-            <div class="w-full h-full bg-gradient-to-br from-violet-500 via-fuchsia-500 to-pink-500 flex items-center justify-center">
-              <IconPackage size={64} class="text-white/50" />
-            </div>
-          {/if}
-
-          <!-- Opening Overlay -->
-          {#if isOpening}
-            <div
-              class="absolute inset-0 flex items-center justify-center bg-black/50"
-            >
-              <div class="text-center">
-                <IconLoader2
-                  size={64}
-                  class="text-white animate-spin mx-auto mb-4"
-                />
-                <p class="text-white text-xl font-bold">Opening...</p>
+            <!-- Opening Overlay -->
+            {#if isOpening}
+              <div class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-3xl">
+                <div class="text-center">
+                  <IconLoader2
+                    size={64}
+                    class="text-white animate-spin mx-auto mb-4"
+                  />
+                  <p class="text-white text-xl font-bold">Opening...</p>
+                </div>
               </div>
-            </div>
-          {/if}
-        </div>
+            {/if}
+          </div>
+        {:else}
+          <!-- Placeholder -->
+          <div class="relative aspect-square rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-pink-500 flex items-center justify-center">
+            <IconPackage size={64} class="text-white/50" />
+            <!-- Opening Overlay -->
+            {#if isOpening}
+              <div class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-3xl">
+                <div class="text-center">
+                  <IconLoader2
+                    size={64}
+                    class="text-white animate-spin mx-auto mb-4"
+                  />
+                  <p class="text-white text-xl font-bold">Opening...</p>
+                </div>
+              </div>
+            {/if}
+          </div>
+        {/if}
 
         <!-- Pack Name -->
         <div class="text-center">
@@ -272,7 +301,7 @@
           {#if balance < pack.rip_cost}
             <div class="space-y-3">
               <p class="text-destructive text-sm text-center">
-                You need {pack.rip_cost - balance} more Rips to open this pack
+                You need {Math.ceil(pack.rip_cost - balance)} more Rips to open this pack
               </p>
               <Button
                 class="w-full"
@@ -305,7 +334,30 @@
       <!-- All Cards Grid -->
       {#if pack.cards && pack.cards.length > 0}
         <div class="mt-12 space-y-4">
-          <h2 class="text-2xl font-bold">Available Cards</h2>
+          <div class="space-y-2">
+            <h2 class="text-2xl font-bold">What's Inside?</h2>
+            <p class="text-muted-foreground">
+              1 of the {pack.totalCards || pack.cards.length} cards below
+            </p>
+            
+            <!-- Stats Grid -->
+            {#if pack.floor !== undefined && pack.ev !== undefined && pack.ceiling !== undefined}
+              <div class="grid grid-cols-3 gap-4 mt-4">
+                <div class="bg-muted/50 rounded-lg p-4 text-center">
+                  <p class="text-xs text-muted-foreground mb-1">Floor</p>
+                  <p class="text-lg font-bold">${(pack.floor / 100).toFixed(2)}</p>
+                </div>
+                <div class="bg-muted/50 rounded-lg p-4 text-center">
+                  <p class="text-xs text-muted-foreground mb-1">EV</p>
+                  <p class="text-lg font-bold">${(pack.ev / 100).toFixed(2)}</p>
+                </div>
+                <div class="bg-muted/50 rounded-lg p-4 text-center">
+                  <p class="text-xs text-muted-foreground mb-1">Ceiling</p>
+                  <p class="text-lg font-bold">${(pack.ceiling / 100).toFixed(2)}</p>
+                </div>
+              </div>
+            {/if}
+          </div>
           <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {#each pack.cards as card}
               <div

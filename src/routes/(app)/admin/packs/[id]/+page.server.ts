@@ -1,8 +1,10 @@
 import { redirect, error } from "@sveltejs/kit";
 import type { PageServerLoad, Actions } from "./$types";
 import { adminClient } from "$lib/server/rips";
+import { requireAdmin } from "$lib/server/auth";
 
 export const load: PageServerLoad = async ({ params, locals }) => {
+  // Admin check is handled by /admin/+layout.server.ts
   const { session, user } = await locals.safeGetSession();
 
   if (!session || !user) {
@@ -117,6 +119,13 @@ export const actions = {
       return { success: false, error: "Unauthorized" };
     }
 
+    // Check if user is admin
+    try {
+      await requireAdmin(user.id);
+    } catch (err) {
+      return { success: false, error: "Forbidden: Admin access required" };
+    }
+
     const packId = params.id;
     const formData = await request.formData();
 
@@ -193,6 +202,13 @@ export const actions = {
 
     if (!session || !user) {
       return { success: false, error: "Unauthorized" };
+    }
+
+    // Check if user is admin
+    try {
+      await requireAdmin(user.id);
+    } catch (err) {
+      return { success: false, error: "Forbidden: Admin access required" };
     }
 
     const packId = params.id;
@@ -272,6 +288,13 @@ export const actions = {
 
     if (!session || !user) {
       return { success: false, error: "Unauthorized" };
+    }
+
+    // Check if user is admin
+    try {
+      await requireAdmin(user.id);
+    } catch (err) {
+      return { success: false, error: "Forbidden: Admin access required" };
     }
 
     const packId = params.id;

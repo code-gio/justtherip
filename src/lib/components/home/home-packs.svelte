@@ -1,46 +1,37 @@
 <script lang="ts">
-  import { IconDiamond, IconFlame, IconSparkles, IconArrowRight } from "@tabler/icons-svelte";
-
   const featuredPacks = [
     {
-      name: "Prismatic Evolution",
-      game: "Pokémon",
+      name: "Prismatic Evolutions",
+      game: "pokemon",
       price: 250,
-      badge: { text: "HOT", type: "hot" },
-      gradient: "pokemon-1",
+      image: "/landing/packs/pack1.svg",
     },
     {
       name: "Surging Sparks",
-      game: "Pokémon",
+      game: "pokemon",
       price: 200,
-      badge: null,
-      gradient: "pokemon-2",
+      image: "/landing/packs/pack2.svg",
     },
     {
       name: "Foundations",
-      game: "Magic: The Gathering",
+      game: "magic",
       price: 180,
-      badge: { text: "NEW", type: "new" },
-      gradient: "mtg-1",
+      image: "/landing/packs/pack3.svg",
     },
     {
       name: "Duskmourn",
-      game: "Magic: The Gathering",
+      game: "magic",
       price: 220,
-      badge: null,
-      gradient: "mtg-2",
+      image: "/landing/packs/pack4.svg",
     },
   ];
 </script>
 
-<section id="packs" class="packs-section">
+<section id="packs" class="packs-section mt-12">
   <div class="container">
     <div class="section-header">
-      <span class="section-tag">Pack Showcase</span>
-      <h2 class="section-title">
-        <span class="light">Featured</span>
-        <span class="accent">Packs</span>
-      </h2>
+      <span class="section-tag">PACK SHOWCASE</span>
+      <h2 class="section-title">FEATURED PACKS</h2>
       <p class="section-description">
         Hand-curated packs with disclosed odds and real collectible pulls.<br />
         Each pack is designed to deliver the thrill of cracking packs — instantly.
@@ -48,35 +39,47 @@
     </div>
 
     <div class="packs-grid">
-      {#each featuredPacks as pack}
-        <a href="/packs" class="pack-card">
-          {#if pack.badge}
-            <div class="pack-badge {pack.badge.type}">
-              {#if pack.badge.type === "hot"}
-                <IconFlame size={12} />
-              {:else}
-                <IconSparkles size={12} />
-              {/if}
-              {pack.badge.text}
+      {#each featuredPacks as pack, i}
+        <a href="/packs" class="pack-card {pack.game}">
+          <div class="pack-card-bg"></div>
+          <div class="pack-content">
+            <div class="pack-image-container ">
+              <img src={pack.image} alt={pack.name} class="pack-image" />
             </div>
-          {/if}
-          <div class="pack-image {pack.gradient}"></div>
-          <div class="pack-info">
-            <span class="pack-game">{pack.game}</span>
-            <span class="pack-name">{pack.name}</span>
-            <div class="pack-price">
-              <IconDiamond size={16} />
-              <span>{pack.price} Jewels</span>
+              <div class="pack-info -mt-10" >
+                {#if pack.game === "pokemon"}
+                  <img src="/landing/packs/PoKéMoN.svg" alt="Pokémon" class="game-logo pokemon-logo" />
+                {:else}
+                  <img src="/landing/packs/Magic-The-Gathering.svg" alt="Magic: The Gathering" class="game-logo magic-logo" />
+                {/if}
+              <span class="pack-name">{pack.name}</span>
+              <span class="pack-price">{pack.price} Jewels</span>
             </div>
           </div>
+          {#if i < featuredPacks.length - 1}
+            <div class="connector-line"></div>
+          {/if}
         </a>
       {/each}
     </div>
 
     <div class="section-cta">
-      <a href="/packs" class="btn btn-outline">
-        View All Packs
-        <IconArrowRight size={18} />
+      <a href="/packs" class="btn btn-primary">
+        VIEW ALL PACKS
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M5 12h14" />
+          <path d="m12 5 7 7-7 7" />
+        </svg>
       </a>
     </div>
   </div>
@@ -84,14 +87,12 @@
 
 <style>
   .packs-section {
-    padding: 8rem 0;
-    background: var(--bg-card);
+    padding: 4rem 2rem 6rem;
   }
 
   .container {
-    max-width: 1280px;
+    max-width: 1300px;
     margin: 0 auto;
-    padding: 0 2rem;
   }
 
   .section-header {
@@ -101,37 +102,27 @@
 
   .section-tag {
     display: inline-block;
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    color: white;
+    margin-bottom: 0.75rem;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--gold);
-    margin-bottom: 1rem;
   }
 
   .section-title {
-    font-family: var(--font-serif);
-    font-size: clamp(2.5rem, 5vw, 4rem);
-    font-weight: 400;
-    line-height: 1.1;
-    margin: 0 0 1.5rem;
-  }
-
-  .section-title .light {
-    font-weight: 400;
-    color: var(--text-gray);
-  }
-
-  .section-title .accent {
-    font-style: italic;
-    color: var(--gold);
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--text-white);
+    margin: 0 0 1rem;
+    text-transform: uppercase;
   }
 
   .section-description {
-    font-size: 1.125rem;
-    color: var(--text-gray);
+    font-size: 16px;
+    color: white;
     line-height: 1.6;
-    max-width: 600px;
+    max-width: 500px;
     margin: 0 auto;
   }
 
@@ -139,113 +130,164 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1.5rem;
+    position: relative;
   }
 
   @media (max-width: 1024px) {
     .packs-grid {
       grid-template-columns: repeat(2, 1fr);
+      gap: 2rem;
     }
   }
 
   @media (max-width: 540px) {
     .packs-grid {
       grid-template-columns: 1fr;
-      max-width: 300px;
-      margin: 0 auto;
+      gap: 2rem;
     }
   }
 
   .pack-card {
     position: relative;
-    background: var(--bg-elevated);
-    border-radius: 16px;
-    padding: 12px;
-    border: 1px solid var(--border);
     text-decoration: none;
     color: inherit;
+    border-radius: 24px;
+    overflow: hidden;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.3s ease;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .pack-card-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    /* backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px); */
     transition: all 0.3s ease;
   }
 
+  /* Pokémon gradient - bottom to top, fades to transparent */
+  .pack-card.pokemon .pack-card-bg {
+    background: linear-gradient(0deg, rgba(124, 58, 237, 0.6) 0%, rgba(91, 33, 182, 0.4) 20%, transparent 55%);
+  }
+
+  /* Magic gradient - bottom to top, fades to transparent */
+  .pack-card.magic .pack-card-bg {
+    background: linear-gradient(0deg, rgba(13, 148, 136, 0.6) 0%, rgba(15, 118, 110, 0.4) 40%, transparent 55%);
+  }
+
+  /* Hover: Increase gradient brightness */
+  .pack-card.pokemon:hover .pack-card-bg {
+    background: linear-gradient(0deg, rgba(124, 58, 237, 0.85) 0%, rgba(91, 33, 182, 0.65) 40%, transparent 100%);
+  }
+
+  .pack-card.magic:hover .pack-card-bg {
+    background: linear-gradient(0deg, rgba(13, 148, 136, 0.85) 0%, rgba(15, 118, 110, 0.65) 40%, transparent 100%);
+  }
+
   .pack-card:hover {
-    transform: translateY(-8px);
-    border-color: rgba(212, 168, 83, 0.3);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
   }
 
-  .pack-badge {
-    position: absolute;
-    top: 4px;
-    left: 20px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    color: white;
-    font-size: 0.625rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-radius: 100px;
+  .pack-content {
+    position: relative;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
   }
 
-  .pack-badge.hot {
-    background: #ef4444;
+  .pack-image-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.25rem;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  .pack-badge.new {
-    background: #8b5cf6;
+  .pack-card:hover .pack-image-container {
+    transform: translateY(-10px);
   }
 
   .pack-image {
-    width: 100%;
-    aspect-ratio: 3/4;
-    border-radius: 10px;
-    margin-bottom: 12px;
+    max-width: 100%;
+    height: 450px;
+    object-fit: cover;
   }
 
-  .pokemon-1 {
-    background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 50%, #dc2626 100%);
-  }
-
-  .pokemon-2 {
-    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #1d4ed8 100%);
-  }
-
-  .mtg-1 {
-    background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #6d28d9 100%);
-  }
-
-  .mtg-2 {
-    background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #059669 100%);
+  .pack-card:hover .pack-image {
+    transform: scale(1.08);
   }
 
   .pack-info {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 0.25rem;
+    text-align: center;
   }
 
-  .pack-game {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+  .game-logo {
+    width: auto;
+    margin-bottom: 0;
+    filter: brightness(0) invert(1);
+    transition: transform 0.4s cubic-bezier(0.34, 0.56, 0.64, 1), height 0.4s ease;
+  }
+
+  .pokemon-logo {
+    height: 40px;
+  }
+
+  .magic-logo {
+    height: 60px;
+  }
+
+  .pack-card:hover .game-logo {
+    transform: scale(1.50) translateY(-4px);
   }
 
   .pack-name {
-    font-weight: 600;
-    font-size: 1rem;
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
   }
 
   .pack-price {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--gold);
-    font-size: 0.875rem;
-    font-weight: 600;
-    margin-top: 4px;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+  }
+
+  /* Connector lines between packs */
+  .connector-line {
+    position: absolute;
+    top: 50%;
+    right: -1.5rem;
+    width: 1.5rem;
+    height: 2px;
+    background: linear-gradient(90deg, 
+      rgba(255, 255, 255, 0.2) 0%, 
+      transparent 50%, 
+      rgba(255, 255, 255, 0.2) 100%);
+    background-size: 8px 2px;
+    background-repeat: repeat-x;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  @media (max-width: 1024px) {
+    .connector-line {
+      display: none;
+    }
   }
 
   .section-cta {
@@ -257,26 +299,35 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 1rem 2rem;
-    font-family: var(--font-sans);
-    font-size: 0.9375rem;
-    font-weight: 600;
+    padding: 0.875rem 1.75rem;
+    font-size: 16px;
+    font-weight: 700;
     border-radius: 100px;
     text-decoration: none;
     transition: all 0.25s ease;
     cursor: pointer;
+  }
+
+  .btn-primary {
+    background-color: #6829F9;
+    color: white;
     border: none;
   }
 
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(104, 41, 249, 0.4);
+  }
+
   .btn-outline {
-    background: transparent;
+    background: rgba(255, 255, 255, 0.05);
     color: var(--text-white);
-    border: 1px solid var(--border);
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .btn-outline:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
   }
 </style>
-

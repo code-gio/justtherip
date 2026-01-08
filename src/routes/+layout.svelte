@@ -5,8 +5,13 @@
   import { onMount } from "svelte";
   import { ModeWatcher } from "mode-watcher";
   import { Toaster } from "$lib/components/ui/sonner";
+  import { page } from "$app/state";
+  import NavLanding from "$lib/components/nav/nav-landing.svelte";
+  
   let { data, children } = $props();
   let { supabase, session } = $derived(data);
+
+  let isLandingPage = $derived(page.url.pathname === "/" || page.url.pathname === "");
 
   onMount(() => {
     // Listen for auth state changes
@@ -23,6 +28,7 @@
     // Supabase automatically refreshes tokens 60 seconds before expiration
     // We set up an additional check to ensure refresh happens
     let refreshInterval: ReturnType<typeof setInterval> | null = null;
+
 
     if (session?.expires_at) {
       const setupRefreshTimer = () => {
@@ -58,6 +64,9 @@
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
+{#if isLandingPage}
+  <NavLanding {session} />
+{/if}
 <div class="h-dvh">
   <Toaster />
   <ModeWatcher />

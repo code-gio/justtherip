@@ -333,7 +333,7 @@ export async function drawCardFromPack(
 export async function calculateSellbackValue(
   valueCents: number
 ): Promise<number> {
-  const sellbackRateStr = await getSystemConfig("sellback_rate_percent");
+  const sellbackRateStr = await getSystemConfig("sellback_rate");
   const sellbackRate = sellbackRateStr ? parseFloat(sellbackRateStr) : 85;
 
   const sellbackCents = Math.floor((valueCents * sellbackRate) / 100);

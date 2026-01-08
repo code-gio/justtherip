@@ -53,11 +53,6 @@ export const navMain = [
     icon: IconWallet,
   },
   {
-    title: "Buy Rips",
-    url: "/buy",
-    icon: IconCoin,
-  },
-  {
     title: "Shipments",
     url: "/shipments",
     icon: IconTruck,

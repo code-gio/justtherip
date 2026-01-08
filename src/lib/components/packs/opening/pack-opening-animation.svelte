@@ -67,6 +67,10 @@
   let previousCard = $state<Card | null>(null);
   let scrollAnimationId: number | null = null;
   let scrollStartTime = $state(0);
+  let shouldDecelerate = $state(false);
+  let decelerationTarget = $state(0);
+  let decelerationStartTime = $state(0);
+  let decelerationStartPosition = $state(0);
 
   // Extract image URL from image_uri field
   function extractImageUrl(imageUri: any): string | null {
@@ -241,6 +245,7 @@
 
     const duplicatedPool = createDuplicatedPool(cardPool, 4);
     const poolLength = duplicatedPool.length;
+    const singlePoolWidth = cardPool.length * cardItemWidth; // Width of one set of cards
     const startIndex = Math.floor(poolLength / 2); // Start in middle of duplicated pool
     const totalWidth = poolLength * cardItemWidth;
 
@@ -257,17 +262,59 @@
       const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
       lastTime = currentTime;
 
-      // Continue scrolling at constant speed
-      scrollPosition += scrollSpeed * deltaTime;
+      if (shouldDecelerate) {
+        // Smooth deceleration phase
+        const elapsed = (currentTime - decelerationStartTime) / 1000; // seconds
+        const duration = 1.5; // 1.5 seconds for deceleration
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Ease out cubic function
+        const eased = 1 - Math.pow(1 - progress, 3);
+        
+        // Interpolate from start position to target
+        const distance = decelerationTarget - decelerationStartPosition;
+        scrollPosition = decelerationStartPosition + (distance * eased);
+        
+        // Wrap around to maintain infinite scroll feel
+        const singlePoolWidth = cardPool.length * cardItemWidth;
+        if (scrollPosition >= totalWidth) {
+          scrollPosition = scrollPosition % singlePoolWidth;
+        } else if (scrollPosition < 0) {
+          scrollPosition = singlePoolWidth + (scrollPosition % singlePoolWidth);
+        }
+        
+        // Continue until we reach the target
+        if (progress < 1) {
+          scrollAnimationId = requestAnimationFrame(scrollLoop);
+        } else {
+          // Deceleration complete, transition to lock phase
+          animationPhase = "lock";
+          setTimeout(() => {
+            animationPhase = "reveal";
+            if (card) {
+              const category = getRarityCategory(card.value_cents || 0);
+              triggerRevealVFX(category);
+            }
+          }, 300);
+        }
+      } else {
+        // Continue scrolling at constant speed
+        scrollPosition += scrollSpeed * deltaTime;
 
-      // Wrap around to create infinite scroll effect
-      // When we scroll past the end, wrap to the beginning (accounting for the duplicated pool)
-      if (scrollPosition >= totalWidth) {
-        scrollPosition = scrollPosition % totalWidth;
+        // Wrap around to create infinite scroll effect
+        // When we scroll past one full set, wrap to equivalent position in next set
+        // This maintains visual continuity since cards are duplicated
+        if (scrollPosition >= totalWidth) {
+          // Wrap to equivalent position in the first set
+          scrollPosition = scrollPosition % singlePoolWidth;
+        } else if (scrollPosition < 0) {
+          // Handle negative wrap (shouldn't happen with forward scroll, but just in case)
+          scrollPosition = singlePoolWidth + (scrollPosition % singlePoolWidth);
+        }
+
+        // Continue the loop
+        scrollAnimationId = requestAnimationFrame(scrollLoop);
       }
-
-      // Continue the loop
-      scrollAnimationId = requestAnimationFrame(scrollLoop);
     };
 
     // Start the scroll loop
@@ -275,11 +322,6 @@
   }
 
   function stopScrollingAndDecelerate() {
-    if (scrollAnimationId !== null) {
-      cancelAnimationFrame(scrollAnimationId);
-      scrollAnimationId = null;
-    }
-
     if (!cardPool.length || !card) return;
 
     const duplicatedPool = createDuplicatedPool(cardPool, 4);
@@ -301,8 +343,9 @@
       let targetScroll = targetCardPosition - centerOffset;
 
       // Normalize current scroll position (account for wrapping)
-      let currentScroll = scrollPosition % totalWidth;
-      if (currentScroll < 0) currentScroll += totalWidth;
+      const singlePoolWidth = cardPool.length * cardItemWidth;
+      let currentScroll = scrollPosition % singlePoolWidth;
+      if (currentScroll < 0) currentScroll += singlePoolWidth;
 
       // Calculate the shortest path to target, keeping the same direction (forward)
       // Since we're always scrolling forward, we need to find the next occurrence
@@ -311,37 +354,19 @@
       
       // If target is behind us, wrap forward to the next occurrence
       if (distanceForward < 0) {
-        distanceForward = (targetScroll + totalWidth) - currentScroll;
+        distanceForward = (targetScroll + singlePoolWidth) - currentScroll;
       }
       
       // Ensure we're scrolling forward (positive distance)
       const finalTarget = currentScroll + distanceForward;
 
-      // Decelerate to target position (always forward direction)
-      // Use tweened with initial value and options
-      const decelTween: Writable<number> = tweened(currentScroll, {
-        duration: 1500,
-        easing: cubicOut,
-      }) as Writable<number>;
-
-      decelTween.set(finalTarget);
-
-      // Subscribe to tween updates
-      const unsubscribe = decelTween.subscribe((value) => {
-        // Keep wrapping to maintain infinite scroll feel
-        scrollPosition = value % totalWidth;
-        if (scrollPosition < 0) scrollPosition += totalWidth;
-      });
-
-      // Phase 3: Lock and reveal
-      setTimeout(() => {
-        animationPhase = "lock";
-        setTimeout(() => {
-          animationPhase = "reveal";
-          const category = getRarityCategory(card.value_cents || 0);
-          triggerRevealVFX(category);
-        }, 300);
-      }, 1500);
+      // Set up smooth deceleration - don't cancel the loop, just change its behavior
+      shouldDecelerate = true;
+      decelerationStartPosition = currentScroll;
+      decelerationTarget = finalTarget;
+      decelerationStartTime = performance.now();
+      
+      // The scroll loop will handle the smooth deceleration
     }
   }
 
@@ -357,6 +382,10 @@
     shakeOffset = { x: 0, y: 0 };
     confettiActive = false;
     scrollStartTime = 0;
+    shouldDecelerate = false;
+    decelerationTarget = 0;
+    decelerationStartTime = 0;
+    decelerationStartPosition = 0;
     // Note: Don't reset previousIsOpening or previousCard here
     // They are managed by the effects
   }

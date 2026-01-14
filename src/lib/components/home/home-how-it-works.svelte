@@ -18,8 +18,8 @@
         <div class="step-icon">
           <IconDiamond size={28} />
         </div>
-        <h3>Buy Jewels</h3>
-        <p>Load up your wallet with Jewels to unlock any pack instantly.</p>
+        <h3>Buy Rips</h3>
+        <p>Load up your wallet with Rips to unlock any pack instantly.</p>
       </div>
 
       <div class="step-connector"></div>

@@ -2,16 +2,17 @@
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Avatar from "$lib/components/ui/avatar/index.js";
   import { Badge } from "$lib/components/ui/badge";
-  import { IconCheck, IconMail, IconUser, IconCamera } from "@tabler/icons-svelte";
+  import { IconCheck, IconMail, IconUser, IconCamera, IconLoader2 } from "@tabler/icons-svelte";
+  import { toast } from "svelte-sonner";
   import type { Profile } from "./types";
 
   interface Props {
     profile: Profile | null;
     email: string;
-    onAvatarClick?: () => void;
+    onAvatarUpload?: (url: string) => void;
   }
 
-  let { profile, email, onAvatarClick }: Props = $props();
+  let { profile, email, onAvatarUpload }: Props = $props();
 
   const getInitials = (name: string | null, email: string): string => {
     if (name && name.trim()) {
@@ -27,6 +28,59 @@
 
   let displayName = $derived(profile?.display_name ?? "");
   let username = $derived(profile?.username ?? "");
+  let uploading = $state(false);
+  let fileInput: HTMLInputElement;
+
+  const handleAvatarClick = () => {
+    fileInput?.click();
+  };
+
+  const handleFileChange = async (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    uploading = true;
+
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const response = await fetch("?/uploadAvatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.type === "success") {
+        toast.success("Avatar updated successfully!");
+        if (onAvatarUpload && result.data?.avatarUrl) {
+          onAvatarUpload(result.data.avatarUrl);
+        }
+        window.location.reload();
+      } else {
+        toast.error("Failed to upload avatar. Please try again.");
+      }
+    } catch (error) {
+      toast.error("An error occurred while uploading.");
+      console.error("Upload error:", error);
+    } finally {
+      uploading = false;
+      if (input) input.value = "";
+    }
+  };
 </script>
 
 <Card.Root class="overflow-hidden">
@@ -47,12 +101,25 @@
           </Avatar.Fallback>
         </Avatar.Root>
         <button
-          onclick={onAvatarClick}
-          class="absolute bottom-0 right-0 p-1.5 rounded-full bg-muted border border-border hover:bg-accent transition-colors"
+          onclick={handleAvatarClick}
+          disabled={uploading}
+          class="absolute bottom-0 right-0 p-1.5 rounded-full bg-muted border border-border hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Change avatar"
         >
-          <IconCamera size={14} />
+          {#if uploading}
+            <IconLoader2 size={14} class="animate-spin" />
+          {:else}
+            <IconCamera size={14} />
+          {/if}
         </button>
+        <input
+          bind:this={fileInput}
+          type="file"
+          accept="image/*"
+          onchange={handleFileChange}
+          class="hidden"
+          aria-label="Upload avatar"
+        />
       </div>
 
       <div class="flex-1 space-y-1">

@@ -53,7 +53,7 @@
                   <img src="/landing/packs/Magic-The-Gathering.svg" alt="Magic: The Gathering" class="game-logo magic-logo" />
                 {/if}
               <span class="pack-name">{pack.name}</span>
-              <span class="pack-price">{pack.price} Jewels</span>
+              <span class="pack-price">{pack.price} Rips</span>
             </div>
           </div>
           {#if i < featuredPacks.length - 1}

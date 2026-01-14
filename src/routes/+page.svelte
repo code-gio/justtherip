@@ -16,7 +16,7 @@
    *
    * UI/UX CONSTRAINTS:
    * - No mention of gambling
-   * - Jewels clearly labeled as non-withdrawable
+   * - Rips clearly labeled as non-withdrawable
    * - Fun, engaging, trustworthy aesthetic
    */
 
@@ -31,6 +31,8 @@
     HomeFeaturedPacks,
   } from "$lib/components/home";
   import HomeFeatures from "$lib/components/home/home-features.svelte";
+
+  let { data } = $props();
 </script>
 
 <svelte:head>
@@ -51,7 +53,7 @@
   <div class="hero-section-bg">
     <div class="purple-vector">
       <HomeHero />
-      <HomeCollectors />
+      <HomeCollectors recentPulls={data.recentPulls} rarePulls={data.rarePulls} />
     </div>
     <HomePacks />
     <!-- Three Steps Section -->

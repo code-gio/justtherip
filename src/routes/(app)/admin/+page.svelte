@@ -11,7 +11,7 @@
    *   - Total users (registered)
    *   - Active users (last 7/30 days)
    *   - Total packs opened
-   *   - Jewels spent (all time)
+   *   - Rips spent (all time)
    *   - Revenue (Jewel purchases)
    * - Pending fulfillments count (urgent)
    * - Quick links to admin sections

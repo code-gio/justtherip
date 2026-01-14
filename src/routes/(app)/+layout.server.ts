@@ -1,6 +1,7 @@
 import { redirect } from "@sveltejs/kit";
 import type { LayoutServerLoad } from "./$types";
 import { getUserRipBalance } from "$lib/server/rips";
+import { processProfileWithAvatar } from "$lib/server/storage";
 
 export const load: LayoutServerLoad = async ({
   locals: { safeGetSession, supabase },
@@ -18,9 +19,11 @@ export const load: LayoutServerLoad = async ({
     getUserRipBalance(user.id),
   ]);
 
+  const processedProfile = await processProfileWithAvatar(supabase, profileResult.data);
+
   return {
     url: url.origin,
-    profile: profileResult.data,
+    profile: processedProfile,
     ripBalance: ripBalance ?? 0,
   };
 };

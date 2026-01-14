@@ -2,9 +2,9 @@
   const steps = [
     {
       number: 1,
-      title: "Buy Jewels",
+      title: "Buy Rips",
       description:
-        "Load up your wallet with Jewels to unlock any pack instantly.",
+        "Load up your wallet with Rips to unlock any pack instantly.",
       gradient:
         "linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #ec008c 100%)",
       url: "/landing/steps/jewel.svg",

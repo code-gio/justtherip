@@ -1,4 +1,4 @@
-export type ShipmentStatus = "pending" | "processing" | "shipped" | "delivered";
+export type ShipmentStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
 
 export interface Shipment {
   id: string;
@@ -13,6 +13,21 @@ export interface Shipment {
   estimatedDelivery: string | null;
   deliveredDate?: string | null;
   shippingAddress?: string;
+}
+
+export interface AdminShipment extends Shipment {
+  userId: string;
+  userEmail?: string;
+  userName?: string;
+  shippingName: string;
+  shippingPhone?: string;
+  cardTierName: string;
+  adminNotes?: string;
+  processedAt?: string;
+  shippedAt?: string;
+  requestedAt: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ShipmentStatusConfig {
@@ -41,6 +56,11 @@ export const SHIPMENT_STATUS_CONFIG: Record<ShipmentStatus, ShipmentStatusConfig
     label: "Delivered",
     description: "Your card has been delivered",
     step: 4,
+  },
+  cancelled: {
+    label: "Cancelled",
+    description: "This shipment has been cancelled",
+    step: 0,
   },
 };
 

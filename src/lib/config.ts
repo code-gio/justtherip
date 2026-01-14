@@ -12,6 +12,9 @@ import {
   IconUsers,
   IconAdjustments,
   IconCoin,
+  IconChartLine,
+  IconSettings,
+  IconReceipt,
 } from "@tabler/icons-svelte";
 
 export const siteConfig = {
@@ -57,11 +60,7 @@ export const navMain = [
     url: "/shipments",
     icon: IconTruck,
   },
-  // {
-  //   title: "Media",
-  //   url: "/media",
-  //   icon: IconLifebuoy,
-  // },
+
 ];
 
 export const adminNav: NavItem[] = [
@@ -69,6 +68,16 @@ export const adminNav: NavItem[] = [
     title: "Admin Dashboard",
     url: "/admin",
     icon: IconDashboard,
+  },
+  {
+    title: "Analytics",
+    url: "/admin/analytics",
+    icon: IconChartLine,
+  },
+  {
+    title: "Transactions",
+    url: "/admin/transactions",
+    icon: IconReceipt,
   },
   {
     title: "Manage Packs",
@@ -93,7 +102,7 @@ export const adminNav: NavItem[] = [
   {
     title: "Settings",
     url: "/admin/settings",
-    icon: IconAdjustments,
+    icon: IconSettings,
   },
 ];
 

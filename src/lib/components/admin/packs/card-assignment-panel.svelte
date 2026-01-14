@@ -305,6 +305,9 @@
         {:else if cards.length === 0}
           <div class="border rounded-lg p-8 text-center text-muted-foreground">
             <p class="text-sm">No cards found</p>
+            {#if gameCode === "mtg" && !searchQuery.trim()}
+              <p class="text-xs mt-2">Try searching for a specific card name</p>
+            {/if}
           </div>
         {:else}
           <div class="grid grid-cols-3 gap-3">

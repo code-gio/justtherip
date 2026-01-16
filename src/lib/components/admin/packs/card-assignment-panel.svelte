@@ -8,6 +8,8 @@
   import AvailableCardItem from "./card-assignment/available-card-item.svelte";
   import AssignedCardItem from "./card-assignment/assigned-card-item.svelte";
   import CardImageDialog from "./card-assignment/card-image-dialog.svelte";
+  import BulkImportModal from "./card-assignment/bulk-import-modal.svelte";
+  import { IconFileImport } from "@tabler/icons-svelte";
 
   interface Card {
     id: string;
@@ -82,6 +84,7 @@
   let searchTimeout: ReturnType<typeof setTimeout> | null = null;
   let selectedCardImage = $state<string | null>(null);
   let imageDialogOpen = $state(false);
+  let bulkImportOpen = $state(false);
 
   const assignedCardIds = $derived(assignedCards.map((ac) => ac.card_uuid));
   
@@ -216,6 +219,14 @@
     return assignedCards.find((ac) => ac.card_uuid === cardUuid);
   }
 
+  function handleBulkCardsVerified(cards: Card[]) {
+    cards.forEach((card) => {
+      if (!isCardAssigned(card.id)) {
+        handleAddCard(card);
+      }
+    });
+  }
+
   let hasLoadedInitial = $state(false);
 
   // Load initial cards when gameCode is available (only once)
@@ -261,6 +272,18 @@
 </script>
 
   <div class="space-y-4">
+  <!-- Bulk Import Button -->
+  <div class="flex justify-end">
+    <Button
+      variant="default"
+      onclick={() => { bulkImportOpen = true; }}
+      disabled={!gameCode}
+    >
+      <IconFileImport size={16} class="mr-2" />
+      Bulk Import Cards
+    </Button>
+  </div>
+
   <div class="grid grid-cols-2 gap-4">
     <!-- Available Cards -->
     <div class="flex flex-col space-y-2">
@@ -372,4 +395,11 @@
 
   <!-- Image Dialog -->
   <CardImageDialog bind:open={imageDialogOpen} imageUrl={selectedCardImage} />
+
+  <!-- Bulk Import Modal -->
+  <BulkImportModal 
+    bind:open={bulkImportOpen} 
+    {gameCode}
+    onCardsVerified={handleBulkCardsVerified}
+  />
 </div>

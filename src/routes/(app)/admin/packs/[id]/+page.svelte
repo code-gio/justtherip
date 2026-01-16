@@ -18,6 +18,8 @@
     market_value: number;
     is_foil: boolean;
     condition: string;
+    card_table?: string;
+    game_code?: string;
     cardData?: {
       id: string;
       name?: string;
@@ -121,6 +123,17 @@
       market_value: priceCents,
       is_foil: packData.game_code === "mtg" && !!card.prices?.usd_foil,
       condition: "NM",
+      card_table: `${packData.game_code}_cards`,
+      game_code: packData.game_code,
+      cardData: {
+        id: card.id,
+        name: card.name,
+        image_uri: card.image_uri,
+        prices: card.prices,
+        set_code: card.set_code || card.set,
+        set_name: card.set_name,
+        rarity: card.rarity,
+      },
     });
 
     errors.general = "";

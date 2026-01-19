@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { DeckFolderWithChildren } from '$lib/types/decks';
-	import { FolderIcon, IconEdit, IconTrash } from '@tabler/icons-svelte';
+	import { IconFolder, IconEdit, IconTrash } from '@tabler/icons-svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 
@@ -31,7 +31,7 @@
 <Card.Root class="cursor-pointer hover:shadow-md transition-shadow group relative" onclick={handleClick}>
 	<Card.Content class="p-4">
 		<div class="flex flex-col items-center justify-center gap-2 min-h-[120px]">
-			<FolderIcon class="h-12 w-12 text-primary" />
+			<IconFolder class="h-12 w-12 text-primary" />
 			<h3 class="font-semibold text-center text-sm line-clamp-2">{folder.name}</h3>
 			{#if folder.children && folder.children.length > 0}
 				<p class="text-xs text-muted-foreground">{folder.children.length} items</p>

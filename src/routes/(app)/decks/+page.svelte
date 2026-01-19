@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import type { DeckFolder, DeckFolderWithChildren, DeckFolderType } from '$lib/types/decks';
-	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { IconPlus, IconFolderPlus, IconFileText } from '@tabler/icons-svelte';
 	import { Button } from '$lib/components/ui/button/index.js';

@@ -3,14 +3,12 @@
 	import type { DeckFolder, DeckFolderWithChildren, DeckFolderType } from '$lib/types/decks';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import { PlusIcon, FolderPlusIcon, FileTextIcon } from '@tabler/icons-svelte';
+	import { IconPlus, IconFolderPlus, IconFileText } from '@tabler/icons-svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import FolderCard from '$lib/components/decks/FolderCard.svelte';
 	import DeckCard from '$lib/components/decks/DeckCard.svelte';
 	import CreateDialog from '$lib/components/decks/CreateDialog.svelte';
 	import EditDialog from '$lib/components/decks/EditDialog.svelte';
-	import { dndzone, TRIGGERS, SOURCES } from '@dnd-kit-svelte/svelte';
-	import { flip } from 'svelte/animate';
 
 	let { data }: { data: PageData } = $props();
 
@@ -34,6 +32,8 @@
 
 	let draggableFolders = $state<DeckFolderWithChildren[]>([]);
 	let draggableDecks = $state<DeckFolderWithChildren[]>([]);
+	let draggedItem = $state<{ id: string; type: 'folder' | 'deck'; index: number } | null>(null);
+	let dragOverIndex = $state<number | null>(null);
 
 	$effect(() => {
 		draggableFolders = folders();
@@ -167,36 +167,59 @@
 		}
 	}
 
-	function handleFolderDndConsider(e: CustomEvent) {
-		draggableFolders = e.detail.items;
-	}
-
-	function handleFolderDndFinalize(e: CustomEvent) {
-		draggableFolders = e.detail.items;
-
-		if (e.detail.info.source === SOURCES.POINTER || e.detail.info.trigger === TRIGGERS.DRAG_STOPPED) {
-			draggableFolders.forEach((folder, index) => {
-				if (folder.position !== index) {
-					handleMove(folder.id, currentFolder?.id || null, index);
-				}
-			});
+	function handleDragStart(e: DragEvent, item: DeckFolderWithChildren, type: 'folder' | 'deck') {
+		if (!e.dataTransfer) return;
+		const items = type === 'folder' ? draggableFolders : draggableDecks;
+		draggedItem = { id: item.id, type, index: items.findIndex((f) => f.id === item.id) };
+		e.dataTransfer.effectAllowed = 'move';
+		e.dataTransfer.setData('text/plain', item.id);
+		if (e.target instanceof HTMLElement) {
+			e.target.style.opacity = '0.5';
 		}
 	}
 
-	function handleDeckDndConsider(e: CustomEvent) {
-		draggableDecks = e.detail.items;
+	function handleDragOver(e: DragEvent, index: number, type: 'folder' | 'deck') {
+		if (!draggedItem || draggedItem.type !== type) return;
+		e.preventDefault();
+		e.dataTransfer!.dropEffect = 'move';
+		dragOverIndex = index;
 	}
 
-	function handleDeckDndFinalize(e: CustomEvent) {
-		draggableDecks = e.detail.items;
+	function handleDragLeave() {
+		dragOverIndex = null;
+	}
 
-		if (e.detail.info.source === SOURCES.POINTER || e.detail.info.trigger === TRIGGERS.DRAG_STOPPED) {
-			draggableDecks.forEach((deck, index) => {
-				if (deck.position !== index) {
-					handleMove(deck.id, currentFolder?.id || null, index);
-				}
-			});
+	function handleDrop(e: DragEvent, dropIndex: number, type: 'folder' | 'deck') {
+		e.preventDefault();
+		if (!draggedItem || draggedItem.type !== type) return;
+
+		const items = type === 'folder' ? draggableFolders : draggableDecks;
+		const draggedIndex = items.findIndex((item) => item.id === draggedItem!.id);
+
+		if (draggedIndex !== dropIndex && draggedIndex !== -1) {
+			const newItems = [...items];
+			const [removed] = newItems.splice(draggedIndex, 1);
+			newItems.splice(dropIndex, 0, removed);
+
+			if (type === 'folder') {
+				draggableFolders = newItems;
+			} else {
+				draggableDecks = newItems;
+			}
+
+			handleMove(removed.id, currentFolder?.id || null, dropIndex);
 		}
+
+		draggedItem = null;
+		dragOverIndex = null;
+	}
+
+	function handleDragEnd(e: DragEvent) {
+		if (e.target instanceof HTMLElement) {
+			e.target.style.opacity = '1';
+		}
+		draggedItem = null;
+		dragOverIndex = null;
 	}
 </script>
 
@@ -207,11 +230,11 @@
 			<h1 class="text-3xl font-bold">Decks</h1>
 			<div class="flex gap-2">
 				<Button onclick={() => openCreateDialog('folder')} variant="outline">
-					<FolderPlusIcon class="h-4 w-4 mr-2" />
+					<IconFolderPlus class="h-4 w-4 mr-2" />
 					New Folder
 				</Button>
 				<Button onclick={() => openCreateDialog('deck')}>
-					<PlusIcon class="h-4 w-4 mr-2" />
+					<IconPlus class="h-4 w-4 mr-2" />
 					New Deck
 				</Button>
 			</div>
@@ -249,18 +272,22 @@
 		{#if draggableFolders.length > 0}
 			<div>
 				<h2 class="text-lg font-semibold mb-4">Folders</h2>
-				<div
-					class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
-					use:dndzone={{
-						items: draggableFolders,
-						flipDurationMs: 200,
-						type: 'folder'
-					}}
-					onconsider={handleFolderDndConsider}
-					onfinalize={handleFolderDndFinalize}
-				>
-					{#each draggableFolders as folder (folder.id)}
-						<div animate:flip={{ duration: 200 }}>
+				<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+					{#each draggableFolders as folder, index (folder.id)}
+						<div
+							draggable="true"
+							role="button"
+							tabindex="0"
+							aria-label="Drag folder {folder.name}"
+							class="transition-all {dragOverIndex === index && draggedItem?.type === 'folder'
+								? 'ring-2 ring-primary scale-105'
+								: ''} {draggedItem?.id === folder.id ? 'opacity-50' : ''}"
+							ondragstart={(e) => handleDragStart(e, folder, 'folder')}
+							ondragover={(e) => handleDragOver(e, index, 'folder')}
+							ondragleave={handleDragLeave}
+							ondrop={(e) => handleDrop(e, index, 'folder')}
+							ondragend={handleDragEnd}
+						>
 							<FolderCard
 								{folder}
 								onClick={openFolder}
@@ -277,18 +304,22 @@
 		{#if draggableDecks.length > 0}
 			<div>
 				<h2 class="text-lg font-semibold mb-4">Decks</h2>
-				<div
-					class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
-					use:dndzone={{
-						items: draggableDecks,
-						flipDurationMs: 200,
-						type: 'deck'
-					}}
-					onconsider={handleDeckDndConsider}
-					onfinalize={handleDeckDndFinalize}
-				>
-					{#each draggableDecks as deck (deck.id)}
-						<div animate:flip={{ duration: 200 }}>
+				<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+					{#each draggableDecks as deck, index (deck.id)}
+						<div
+							draggable="true"
+							role="button"
+							tabindex="0"
+							aria-label="Drag deck {deck.name}"
+							class="transition-all {dragOverIndex === index && draggedItem?.type === 'deck'
+								? 'ring-2 ring-primary scale-105'
+								: ''} {draggedItem?.id === deck.id ? 'opacity-50' : ''}"
+							ondragstart={(e) => handleDragStart(e, deck, 'deck')}
+							ondragover={(e) => handleDragOver(e, index, 'deck')}
+							ondragleave={handleDragLeave}
+							ondrop={(e) => handleDrop(e, index, 'deck')}
+							ondragend={handleDragEnd}
+						>
 							<DeckCard {deck} onEdit={openEditDialog} onDelete={handleDelete} />
 						</div>
 					{/each}
@@ -299,18 +330,18 @@
 		<!-- Empty State -->
 		{#if draggableFolders.length === 0 && draggableDecks.length === 0}
 			<div class="flex flex-col items-center justify-center py-16 text-center">
-				<FileTextIcon class="h-16 w-16 text-muted-foreground/50 mb-4" strokeWidth={1.5} />
+				<IconFileText class="h-16 w-16 text-muted-foreground/50 mb-4" />
 				<h3 class="text-xl font-semibold mb-2">No decks or folders yet</h3>
 				<p class="text-muted-foreground mb-6">
 					Create your first deck or folder to get started organizing your collection
 				</p>
 				<div class="flex gap-2">
 					<Button onclick={() => openCreateDialog('folder')} variant="outline">
-						<FolderPlusIcon class="h-4 w-4 mr-2" />
+						<IconFolderPlus class="h-4 w-4 mr-2" />
 						Create Folder
 					</Button>
 					<Button onclick={() => openCreateDialog('deck')}>
-						<PlusIcon class="h-4 w-4 mr-2" />
+						<IconPlus class="h-4 w-4 mr-2" />
 						Create Deck
 					</Button>
 				</div>
@@ -339,12 +370,11 @@
 </div>
 
 <style>
-	:global([data-dnd-kit-draggable-dragging]) {
-		opacity: 0.5;
+	[draggable="true"] {
+		cursor: grab;
 	}
 
-	:global([data-dnd-kit-droppable-over]) {
-		background-color: hsl(var(--accent));
-		border-color: hsl(var(--primary));
+	[draggable="true"]:active {
+		cursor: grabbing;
 	}
 </style>

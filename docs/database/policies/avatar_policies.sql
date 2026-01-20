@@ -1,4 +1,4 @@
--- Política para SUBIR (Upload/Insert)
+-- Policy for UPLOAD (Insert)
 CREATE POLICY "Users can upload their own avatar"
 ON storage.objects
 FOR INSERT
@@ -8,7 +8,7 @@ WITH CHECK (
   AND (storage.foldername(name))[1] = auth.uid()::text
 );
 
--- Política para ACTUALIZAR (Update)
+-- Policy for UPDATE
 CREATE POLICY "Users can update their own avatar"
 ON storage.objects
 FOR UPDATE
@@ -22,7 +22,7 @@ WITH CHECK (
   AND (storage.foldername(name))[1] = auth.uid()::text
 );
 
--- Política para ELIMINAR (Delete)
+-- Policy for DELETE
 CREATE POLICY "Users can delete their own avatar"
 ON storage.objects
 FOR DELETE
@@ -32,7 +32,7 @@ USING (
   AND (storage.foldername(name))[1] = auth.uid()::text
 );
 
--- Política para LEER (Select) - Solo Autenticados
+-- Policy for READ (Select) - Authenticated Users Only
 CREATE POLICY "Users can view avatars"
 ON storage.objects
 FOR SELECT

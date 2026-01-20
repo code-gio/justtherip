@@ -15,6 +15,7 @@ import {
   IconChartLine,
   IconSettings,
   IconReceipt,
+  IconFolder,
 } from "@tabler/icons-svelte";
 
 export const siteConfig = {
@@ -44,11 +45,15 @@ export const navMain = [
     url: "/packs",
     icon: IconPackages,
   },
-
   {
     title: "Inventory",
     url: "/inventory",
     icon: IconCards,
+  },
+  {
+    title: "Decks",
+    url: "/decks",
+    icon: IconFolder,
   },
   {
     title: "Wallet",

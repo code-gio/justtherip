@@ -76,9 +76,28 @@ This repository contains the **Phase 1 MVP** implementation.
 │   ├── services/        # Business logic (packs, wallets, RNG)
 │   └── utils/           # Idempotency, logging, helpers
 │
+├── docs/                # 📚 Project documentation
+│   ├── database/        # Database migrations, policies & queries
+│   ├── setup/           # Configuration guides
+│   └── guides/          # Feature-specific documentation
+│
 ├── supabase/            # SQL, RLS policies, migrations
 └── README.md
 ```
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the [`/docs`](./docs/) folder:
+
+- **[Database Documentation](./docs/database/)** - Migrations, policies, and queries
+- **[Setup Guides](./docs/setup/)** - Configuration and setup instructions
+- **[Feature Guides](./docs/guides/)** - Detailed feature documentation
+
+### Quick Links
+
+- [Database Migrations](./docs/database/migrations/) - SQL scripts for schema setup
+- [Avatar Setup](./docs/setup/avatar_setup.md) - Configure avatar storage
+- [Quick Instructions](./docs/guides/quick_instructions.md) - Common tasks reference
 
 ---
 

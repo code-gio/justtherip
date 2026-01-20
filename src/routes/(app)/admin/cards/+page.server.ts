@@ -15,7 +15,8 @@ export const load: PageServerLoad = async ({ url }) => {
   // Determine which tables to query
   const tablesToQuery: string[] = [];
   if (gameFilter === "all") {
-    tablesToQuery.push("mtg_cards", "pokemon_cards", "yugioh_cards");
+    // TODO: Add "pokemon_cards", "yugioh_cards" when tables are created
+    tablesToQuery.push("mtg_cards");
   } else {
     tablesToQuery.push(`${gameFilter}_cards`);
   }

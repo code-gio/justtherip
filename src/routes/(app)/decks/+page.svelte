@@ -2,12 +2,13 @@
 	import type { PageData } from './$types';
 	import type { DeckFolder, DeckFolderWithChildren, DeckFolderType } from '$lib/types/decks';
 	import { invalidateAll } from '$app/navigation';
-	import { IconPlus, IconFolderPlus, IconFileText } from '@tabler/icons-svelte';
+	import { IconPlus, IconFolderPlus, IconFileText, IconLoader2 } from '@tabler/icons-svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import FolderCard from '$lib/components/decks/FolderCard.svelte';
 	import DeckCard from '$lib/components/decks/DeckCard.svelte';
 	import CreateDialog from '$lib/components/decks/CreateDialog.svelte';
 	import EditDialog from '$lib/components/decks/EditDialog.svelte';
+	import MoveDialog from '$lib/components/decks/MoveDialog.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -17,7 +18,58 @@
 	let createDialogType = $state<DeckFolderType>('folder');
 	let editDialogOpen = $state(false);
 	let editingItem = $state<DeckFolder | null>(null);
+	let moveDialogOpen = $state(false);
+	let movingItem = $state<DeckFolder | null>(null);
 	let isSubmitting = $state(false);
+
+	let draggedItem = $state<DeckFolderWithChildren | null>(null);
+	let dragOverIndex = $state<number | null>(null);
+	let dragOverFolder = $state<string | null>(null);
+
+	// Track folder navigation with IDs to avoid infinite loops
+	let currentFolderId = $state<string | null>(null);
+	let breadcrumbIds = $state<string[]>([]);
+
+	// Helper function to find folder by id
+	function findFolder(folders: DeckFolderWithChildren[], id: string): DeckFolderWithChildren | null {
+		for (const folder of folders) {
+			if (folder.id === id) return folder;
+			if (folder.children.length > 0) {
+				const found = findFolder(folder.children, id);
+				if (found) return found;
+			}
+		}
+		return null;
+	}
+	
+	// Effect to update currentFolder and breadcrumbs when data changes
+	$effect(() => {
+		// Only observe data.folders, currentFolderId, and breadcrumbIds
+		data.folders;
+		
+		// Update currentFolder
+		if (currentFolderId) {
+			const updated = findFolder(data.folders, currentFolderId);
+			if (updated) {
+				currentFolder = updated;
+			}
+		}
+		
+		// Update breadcrumbs
+		if (breadcrumbIds.length > 0) {
+			const updatedBreadcrumbs: DeckFolderWithChildren[] = [];
+			for (const id of breadcrumbIds) {
+				const updated = findFolder(data.folders, id);
+				if (updated) {
+					updatedBreadcrumbs.push(updated);
+				}
+			}
+			// Only update if we found all breadcrumbs
+			if (updatedBreadcrumbs.length === breadcrumbIds.length) {
+				breadcrumbs = updatedBreadcrumbs;
+			}
+		}
+	});
 
 	const currentItems = $derived(() => {
 		if (!currentFolder) {
@@ -26,31 +78,28 @@
 		return currentFolder.children;
 	});
 
-	const folders = $derived(() => currentItems().filter((item) => item.type === 'folder'));
-	const decks = $derived(() => currentItems().filter((item) => item.type === 'deck'));
-
-	let draggableFolders = $state<DeckFolderWithChildren[]>([]);
-	let draggableDecks = $state<DeckFolderWithChildren[]>([]);
-	let draggedItem = $state<{ id: string; type: 'folder' | 'deck'; index: number } | null>(null);
-	let dragOverIndex = $state<number | null>(null);
-
-	$effect(() => {
-		draggableFolders = folders();
-		draggableDecks = decks();
-	});
+	const draggableItems = $derived(currentItems());
 
 	function openFolder(folder: DeckFolderWithChildren) {
-		breadcrumbs = [...breadcrumbs, currentFolder].filter(Boolean) as DeckFolderWithChildren[];
+		if (currentFolder) {
+			breadcrumbs = [...breadcrumbs, currentFolder];
+			breadcrumbIds = [...breadcrumbIds, currentFolder.id];
+		}
 		currentFolder = folder;
+		currentFolderId = folder.id;
 	}
 
 	function navigateToBreadcrumb(index: number) {
 		if (index === -1) {
 			currentFolder = null;
+			currentFolderId = null;
 			breadcrumbs = [];
+			breadcrumbIds = [];
 		} else {
 			currentFolder = breadcrumbs[index];
+			currentFolderId = breadcrumbs[index].id;
 			breadcrumbs = breadcrumbs.slice(0, index);
+			breadcrumbIds = breadcrumbIds.slice(0, index);
 		}
 	}
 
@@ -62,6 +111,11 @@
 	function openEditDialog(item: DeckFolder) {
 		editingItem = item;
 		editDialogOpen = true;
+	}
+
+	function openMoveDialog(item: DeckFolder) {
+		movingItem = item;
+		moveDialogOpen = true;
 	}
 
 	async function handleCreate(formData: {
@@ -98,7 +152,12 @@
 		}
 	}
 
-	async function handleEdit(formData: { id: string; name: string; status: string; packages: string[] | null }) {
+	async function handleEdit(formData: {
+		id: string;
+		name: string;
+		status: string;
+		packages: string[] | null;
+	}) {
 		if (isSubmitting) return;
 		isSubmitting = true;
 
@@ -163,13 +222,40 @@
 			await invalidateAll();
 		} catch (error) {
 			console.error('Failed to move:', error);
+			throw error;
 		}
 	}
 
-	function handleDragStart(e: DragEvent, item: DeckFolderWithChildren, type: 'folder' | 'deck') {
+	async function handleMoveDragDrop(id: string, parentId: string | null, position: number) {
+		if (isSubmitting) return;
+		isSubmitting = true;
+		
+		try {
+			await handleMove(id, parentId, position);
+		} finally {
+			isSubmitting = false;
+		}
+	}
+
+	async function handleMoveDialog(targetParentId: string | null) {
+		if (!movingItem) return;
+		if (isSubmitting) return;
+		isSubmitting = true;
+
+		try {
+			await handleMove(movingItem.id, targetParentId, 0);
+			moveDialogOpen = false;
+			movingItem = null;
+		} catch (error) {
+			console.error('Failed to move item:', error);
+		} finally {
+			isSubmitting = false;
+		}
+	}
+
+	function handleDragStart(e: DragEvent, item: DeckFolderWithChildren) {
 		if (!e.dataTransfer) return;
-		const items = type === 'folder' ? draggableFolders : draggableDecks;
-		draggedItem = { id: item.id, type, index: items.findIndex((f) => f.id === item.id) };
+		draggedItem = item;
 		e.dataTransfer.effectAllowed = 'move';
 		e.dataTransfer.setData('text/plain', item.id);
 		if (e.target instanceof HTMLElement) {
@@ -177,40 +263,77 @@
 		}
 	}
 
-	function handleDragOver(e: DragEvent, index: number, type: 'folder' | 'deck') {
-		if (!draggedItem || draggedItem.type !== type) return;
+	function handleDragOver(e: DragEvent, index: number) {
+		if (!draggedItem) return;
 		e.preventDefault();
 		e.dataTransfer!.dropEffect = 'move';
 		dragOverIndex = index;
 	}
 
-	function handleDragLeave() {
-		dragOverIndex = null;
+	function handleDragOverFolder(e: DragEvent, folderId: string) {
+		if (!draggedItem) return;
+		
+		// Can't drop a folder into itself
+		if (draggedItem.id === folderId) return;
+		
+		// Can't drop a folder into a deck
+		const targetFolder = draggableItems.find(item => item.id === folderId);
+		if (targetFolder && targetFolder.type === 'deck') return;
+		
+		// Can't drop a folder into its own descendant
+		if (draggedItem.type === 'folder') {
+			if (isDescendant(folderId, draggedItem)) return;
+		}
+		
+		e.preventDefault();
+		e.dataTransfer!.dropEffect = 'move';
+		dragOverFolder = folderId;
 	}
 
-	function handleDrop(e: DragEvent, dropIndex: number, type: 'folder' | 'deck') {
-		e.preventDefault();
-		if (!draggedItem || draggedItem.type !== type) return;
+	function isDescendant(checkId: string, parent: DeckFolderWithChildren): boolean {
+		for (const child of parent.children) {
+			if (child.id === checkId) return true;
+			if (isDescendant(checkId, child)) return true;
+		}
+		return false;
+	}
 
-		const items = type === 'folder' ? draggableFolders : draggableDecks;
-		const draggedIndex = items.findIndex((item) => item.id === draggedItem!.id);
+	function handleDragLeave() {
+		dragOverIndex = null;
+		dragOverFolder = null;
+	}
+
+	async function handleDrop(e: DragEvent, dropIndex: number) {
+		e.preventDefault();
+		if (!draggedItem || isSubmitting) return;
+
+		const draggedIndex = draggableItems.findIndex((item) => item.id === draggedItem!.id);
 
 		if (draggedIndex !== dropIndex && draggedIndex !== -1) {
-			const newItems = [...items];
-			const [removed] = newItems.splice(draggedIndex, 1);
-			newItems.splice(dropIndex, 0, removed);
-
-			if (type === 'folder') {
-				draggableFolders = newItems;
-			} else {
-				draggableDecks = newItems;
-			}
-
-			handleMove(removed.id, currentFolder?.id || null, dropIndex);
+			// Reorder within the same parent
+			await handleMoveDragDrop(draggedItem.id, currentFolder?.id || null, dropIndex);
 		}
 
 		draggedItem = null;
 		dragOverIndex = null;
+		dragOverFolder = null;
+	}
+
+	async function handleDropOnFolder(e: DragEvent, folderId: string) {
+		e.preventDefault();
+		if (!draggedItem || isSubmitting) return;
+
+		const targetFolder = draggableItems.find(item => item.id === folderId);
+		if (!targetFolder || targetFolder.type === 'deck') return;
+		if (draggedItem.id === folderId) return;
+		if (draggedItem.type === 'folder' && isDescendant(folderId, draggedItem)) return;
+
+		// Move item into the folder
+		await handleMoveDragDrop(draggedItem.id, folderId, 0);
+
+		draggedItem = null;
+		dragOverIndex = null;
+		dragOverFolder = null;
 	}
 
 	function handleDragEnd(e: DragEvent) {
@@ -219,11 +342,21 @@
 		}
 		draggedItem = null;
 		dragOverIndex = null;
+		dragOverFolder = null;
 	}
 </script>
 
-<div class="container mx-auto py-8 px-4 max-w-7xl">
-	<!-- Header -->
+<div class="container mx-auto py-8 px-4 max-w-7xl relative">
+	<!-- Loading overlay -->
+	{#if isSubmitting}
+		<div class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+			<div class="flex flex-col items-center gap-2">
+				<IconLoader2 class="h-8 w-8 animate-spin text-primary" />
+				<p class="text-sm text-muted-foreground">Processing...</p>
+			</div>
+		</div>
+	{/if}
+
 	<div class="mb-8">
 		<div class="flex items-center justify-between mb-4">
 			<h1 class="text-3xl font-bold">Decks</h1>
@@ -239,21 +372,14 @@
 			</div>
 		</div>
 
-		<!-- Breadcrumbs -->
 		{#if breadcrumbs.length > 0 || currentFolder}
 			<div class="flex items-center gap-2 text-sm text-muted-foreground">
-				<button
-					class="hover:text-foreground transition-colors"
-					onclick={() => navigateToBreadcrumb(-1)}
-				>
+				<button class="hover:text-foreground transition-colors" onclick={() => navigateToBreadcrumb(-1)}>
 					Home
 				</button>
 				{#each breadcrumbs as crumb, index}
 					<span>/</span>
-					<button
-						class="hover:text-foreground transition-colors"
-						onclick={() => navigateToBreadcrumb(index)}
-					>
+					<button class="hover:text-foreground transition-colors" onclick={() => navigateToBreadcrumb(index)}>
 						{crumb.name}
 					</button>
 				{/each}
@@ -265,69 +391,52 @@
 		{/if}
 	</div>
 
-	<!-- Content Grid -->
 	<div class="space-y-8">
-		<!-- Folders Section -->
-		{#if draggableFolders.length > 0}
-			<div>
-				<h2 class="text-lg font-semibold mb-4">Folders</h2>
-				<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-					{#each draggableFolders as folder, index (folder.id)}
+		{#if draggableItems.length > 0}
+			<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+				{#each draggableItems as item, index (item.id)}
+					<div
+						draggable="true"
+						role="button"
+						tabindex="0"
+						aria-label="Drag {item.type} {item.name}"
+						class="transition-all
+							{dragOverIndex === index ? 'ring-2 ring-primary scale-105' : ''}
+							{draggedItem?.id === item.id ? 'opacity-50' : ''}
+							{dragOverFolder === item.id && item.type === 'folder' ? 'ring-2 ring-blue-500 scale-105' : ''}"
+						ondragstart={(e) => handleDragStart(e, item)}
+						ondragover={(e) => handleDragOver(e, index)}
+						ondragleave={handleDragLeave}
+						ondrop={(e) => handleDrop(e, index)}
+						ondragend={handleDragEnd}
+					>
+					{#if item.type === 'folder'}
 						<div
-							draggable="true"
 							role="button"
 							tabindex="0"
-							aria-label="Drag folder {folder.name}"
-							class="transition-all {dragOverIndex === index && draggedItem?.type === 'folder'
-								? 'ring-2 ring-primary scale-105'
-								: ''} {draggedItem?.id === folder.id ? 'opacity-50' : ''}"
-							ondragstart={(e) => handleDragStart(e, folder, 'folder')}
-							ondragover={(e) => handleDragOver(e, index, 'folder')}
-							ondragleave={handleDragLeave}
-							ondrop={(e) => handleDrop(e, index, 'folder')}
-							ondragend={handleDragEnd}
+							ondragover={(e) => handleDragOverFolder(e, item.id)}
+							ondrop={(e) => handleDropOnFolder(e, item.id)}
 						>
-							<FolderCard
-								{folder}
-								onClick={openFolder}
+								<FolderCard
+									folder={item}
+									onClick={openFolder}
+									onEdit={openEditDialog}
+									onDelete={handleDelete}
+									onMove={openMoveDialog}
+								/>
+							</div>
+						{:else}
+							<DeckCard
+								deck={item}
 								onEdit={openEditDialog}
 								onDelete={handleDelete}
+								onMove={openMoveDialog}
 							/>
-						</div>
-					{/each}
-				</div>
+						{/if}
+					</div>
+				{/each}
 			</div>
-		{/if}
-
-		<!-- Decks Section -->
-		{#if draggableDecks.length > 0}
-			<div>
-				<h2 class="text-lg font-semibold mb-4">Decks</h2>
-				<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-					{#each draggableDecks as deck, index (deck.id)}
-						<div
-							draggable="true"
-							role="button"
-							tabindex="0"
-							aria-label="Drag deck {deck.name}"
-							class="transition-all {dragOverIndex === index && draggedItem?.type === 'deck'
-								? 'ring-2 ring-primary scale-105'
-								: ''} {draggedItem?.id === deck.id ? 'opacity-50' : ''}"
-							ondragstart={(e) => handleDragStart(e, deck, 'deck')}
-							ondragover={(e) => handleDragOver(e, index, 'deck')}
-							ondragleave={handleDragLeave}
-							ondrop={(e) => handleDrop(e, index, 'deck')}
-							ondragend={handleDragEnd}
-						>
-							<DeckCard {deck} onEdit={openEditDialog} onDelete={handleDelete} />
-						</div>
-					{/each}
-				</div>
-			</div>
-		{/if}
-
-		<!-- Empty State -->
-		{#if draggableFolders.length === 0 && draggableDecks.length === 0}
+		{:else}
 			<div class="flex flex-col items-center justify-center py-16 text-center">
 				<IconFileText class="h-16 w-16 text-muted-foreground/50 mb-4" />
 				<h3 class="text-xl font-semibold mb-2">No decks or folders yet</h3>
@@ -348,11 +457,11 @@
 		{/if}
 	</div>
 
-	<!-- Dialogs -->
 	<CreateDialog
 		bind:open={createDialogOpen}
 		type={createDialogType}
 		parentId={currentFolder?.id}
+		isSubmitting={isSubmitting}
 		onClose={() => (createDialogOpen = false)}
 		onSubmit={handleCreate}
 	/>
@@ -360,20 +469,34 @@
 	<EditDialog
 		bind:open={editDialogOpen}
 		item={editingItem}
+		isSubmitting={isSubmitting}
 		onClose={() => {
 			editDialogOpen = false;
 			editingItem = null;
 		}}
 		onSubmit={handleEdit}
 	/>
+
+	<MoveDialog
+		bind:open={moveDialogOpen}
+		item={movingItem}
+		allFolders={data.folders}
+		currentParentId={movingItem?.parent_id}
+		isSubmitting={isSubmitting}
+		onClose={() => {
+			moveDialogOpen = false;
+			movingItem = null;
+		}}
+		onSubmit={handleMoveDialog}
+	/>
 </div>
 
 <style>
-	[draggable="true"] {
+	[draggable='true'] {
 		cursor: grab;
 	}
 
-	[draggable="true"]:active {
+	[draggable='true']:active {
 		cursor: grabbing;
 	}
 </style>

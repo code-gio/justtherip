@@ -33,6 +33,7 @@
   import HomeFeatures from "$lib/components/home/home-features.svelte";
 
   let { data } = $props();
+
 </script>
 
 <svelte:head>
@@ -55,7 +56,7 @@
       <HomeHero />
       <HomeCollectors recentPulls={data.recentPulls} rarePulls={data.rarePulls} />
     </div>
-    <HomePacks />
+    <HomePacks packs={data.topPacks} />
     <!-- Three Steps Section -->
     <HomeThreeSteps />
 

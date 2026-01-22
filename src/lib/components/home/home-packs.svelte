@@ -1,30 +1,55 @@
 <script lang="ts">
-  const featuredPacks = [
-    {
-      name: "Prismatic Evolutions",
-      game: "pokemon",
-      price: 250,
-      image: "/landing/packs/pack1.svg",
-    },
-    {
-      name: "Surging Sparks",
-      game: "pokemon",
-      price: 200,
-      image: "/landing/packs/pack2.svg",
-    },
-    {
-      name: "Foundations",
-      game: "magic",
-      price: 180,
-      image: "/landing/packs/pack3.svg",
-    },
-    {
-      name: "Duskmourn",
-      game: "magic",
-      price: 220,
-      image: "/landing/packs/pack4.svg",
-    },
-  ];
+  import FannedCards from "$lib/components/packs/fanned-cards.svelte";
+
+  interface TopCard {
+    id: string;
+    name: string;
+    image_url: string | null;
+    market_value: number;
+  }
+
+  interface Pack {
+    id: string;
+    name: string;
+    slug: string;
+    image_url: string | null;
+    game_code: string;
+    rip_cost: number;
+    total_openings: number;
+    topCards?: TopCard[];
+  }
+
+  interface Props {
+    packs: Pack[];
+  }
+
+  let { packs = [] }: Props = $props();
+
+  const defaultPackImages: Record<string, string> = {
+    "0": "/landing/packs/pack1.svg",
+    "1": "/landing/packs/pack2.svg",
+    "2": "/landing/packs/pack3.svg",
+    "3": "/landing/packs/pack4.svg",
+  };
+
+  const normalizeGameCode = (gameCode: string): string => {
+    if (gameCode === "pkm") return "pokemon";
+    if (gameCode === "mtg") return "magic";
+    return gameCode;
+  };
+
+  const featuredPacks = $derived(
+    packs.slice(0, 4).map((pack, index) => ({
+      id: pack.id,
+      name: pack.name,
+      game: normalizeGameCode(pack.game_code),
+      price: pack.rip_cost,
+      image: pack.image_url || defaultPackImages[index.toString()] || "/landing/packs/pack1.svg",
+      slug: pack.slug,
+      topCards: pack.topCards || [],
+    }))
+  );
+
 </script>
 
 <section id="packs" class="packs-section mt-12">
@@ -40,16 +65,20 @@
 
     <div class="packs-grid">
       {#each featuredPacks as pack, i}
-        <a href="/packs" class="pack-card {pack.game}">
+        <a href="/packs/{pack.id}" class="pack-card group {pack.game}" data-sveltekit-preload-data>
           <div class="pack-card-bg"></div>
           <div class="pack-content">
-            <div class="pack-image-container ">
-              <img src={pack.image} alt={pack.name} class="pack-image" />
+            <div class="pack-image-container">
+              {#if pack.topCards && pack.topCards.length > 0}
+                <FannedCards cards={pack.topCards} />
+              {:else}
+                <img src={pack.image} alt={pack.name} class="pack-image" />
+              {/if}
             </div>
-              <div class="pack-info -mt-10" >
+            <div class="pack-info mt-5">
                 {#if pack.game === "pokemon"}
                   <img src="/landing/packs/PoKéMoN.svg" alt="Pokémon" class="game-logo pokemon-logo" />
-                {:else}
+                {:else if pack.game === "magic"}
                   <img src="/landing/packs/Magic-The-Gathering.svg" alt="Magic: The Gathering" class="game-logo magic-logo" />
                 {/if}
               <span class="pack-name">{pack.name}</span>
@@ -152,13 +181,19 @@
     text-decoration: none;
     color: inherit;
     border-radius: 24px;
-    overflow: hidden;
+    overflow: visible;
     transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
-                box-shadow 0.3s ease;
+                box-shadow 0.3s ease,
+                z-index 0.1s ease;
     padding: 2rem 1.5rem;
     display: flex;
     flex-direction: column;
     align-items: center;
+    z-index: 1;
+  }
+
+  .pack-card:hover {
+    z-index: 10;
   }
 
   .pack-card-bg {
@@ -171,6 +206,8 @@
     /* backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px); */
     transition: all 0.3s ease;
+    border-radius: 24px;
+    overflow: hidden;
   }
 
   /* Pokémon gradient - bottom to top, fades to transparent */
@@ -195,6 +232,7 @@
   .pack-card:hover {
     transform: translateY(-10px) scale(1.02);
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    z-index: 10;
   }
 
   .pack-content {
@@ -210,12 +248,18 @@
     position: relative;
     display: flex;
     justify-content: center;
+    align-items: center;
     margin-bottom: 0.25rem;
+    width: 100%;
+    min-height: 300px;
+    height: 300px;
     transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 2;
   }
 
   .pack-card:hover .pack-image-container {
     transform: translateY(-10px);
+    z-index: 20;
   }
 
   .pack-image {
@@ -226,6 +270,20 @@
 
   .pack-card:hover .pack-image {
     transform: scale(1.08);
+  }
+
+  @media (max-width: 768px) {
+    .pack-image-container {
+      min-height: 200px;
+      height: 200px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .pack-image-container {
+      min-height: 320px;
+      height: 320px;
+    }
   }
 
   .pack-info {

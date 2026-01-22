@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { IconPackage } from "@tabler/icons-svelte";
+  import { IconPackage, IconCards } from "@tabler/icons-svelte";
   import FannedCards from "./fanned-cards.svelte";
 
   interface TopCard {
@@ -14,6 +14,7 @@
     name: string;
     image: string | null;
     price: number;
+    game_code?: string;
     topCards?: TopCard[];
   }
 
@@ -26,6 +27,11 @@
     onClick?: () => void;
     class?: string;
   } = $props();
+
+
+  $effect(() => {
+    console.log(pack);
+  });
 </script>
 
 <div
@@ -64,6 +70,13 @@
 
     <!-- Pack Info -->
     <div class="pack-info">
+      {#if pack.game_code === "mtg"}
+        <img src="/landing/packs/Magic-The-Gathering.svg" alt="Magic: The Gathering" class="game-logo magic-logo" />
+      {:else if pack.game_code === "pokemon"}
+        <img src="/landing/packs/PoKéMoN.svg" alt="Pokémon" class="game-logo pokemon-logo" />
+      {:else}
+        <IconCards size={32} class="game-icon" />
+      {/if}
       <h3 class="pack-name">{pack.name}</h3>
       <span class="pack-price">{pack.price} Rips</span>
     </div>
@@ -171,6 +184,35 @@
     gap: 0.25rem;
     text-align: center;
     margin-top: 1.5rem;
+  }
+
+  .game-logo {
+    width: auto;
+    margin-bottom: 0.5rem;
+    filter: brightness(0) invert(1);
+    transition: transform 0.4s cubic-bezier(0.34, 0.56, 0.64, 1);
+  }
+
+  .pokemon-logo {
+    height: 40px;
+  }
+
+  .magic-logo {
+    height: 60px;
+  }
+
+  .pack-card:hover .game-logo {
+    transform: scale(1.15) translateY(-2px);
+  }
+
+  .game-icon {
+    color: white;
+    margin-bottom: 0.5rem;
+    transition: transform 0.4s cubic-bezier(0.34, 0.56, 0.64, 1);
+  }
+
+  .pack-card:hover .game-icon {
+    transform: scale(1.15) translateY(-2px);
   }
 
   .pack-name {

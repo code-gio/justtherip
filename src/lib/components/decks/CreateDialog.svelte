@@ -29,6 +29,12 @@
 	let status = $state<DeckFolderStatus>('private');
 	let allPackages = $state(true);
 	let selectedPackages = $state<string[]>([]);
+	
+	const isFormValid = $derived(() => {
+		if (!name.trim()) return false;
+		if (type === 'deck' && !allPackages && selectedPackages.length === 0) return false;
+		return true;
+	});
 
 	const availablePackages = ['mtg'];
 
@@ -41,6 +47,11 @@
 	function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
 		if (!name.trim() || isSubmitting) return;
+		
+		// Validate packages for decks
+		if (type === 'deck' && !allPackages && selectedPackages.length === 0) {
+			return;
+		}
 
 		const packages = allPackages ? null : selectedPackages.length > 0 ? selectedPackages : null;
 
@@ -125,6 +136,9 @@
 
 					{#if !allPackages}
 						<div class="space-y-2 ml-6">
+							{#if selectedPackages.length === 0}
+								<p class="text-sm text-red-500">Please select at least one package</p>
+							{/if}
 							{#each availablePackages as pkg}
 								<div class="flex items-center space-x-2">
 									<Checkbox
@@ -148,7 +162,7 @@
 
 			<Dialog.Footer>
 				<Button type="button" variant="outline" onclick={() => (open = false)} disabled={isSubmitting}>Cancel</Button>
-				<Button type="submit" disabled={isSubmitting}>
+				<Button type="submit" disabled={isSubmitting || (type === 'deck' && !allPackages && selectedPackages.length === 0)}>
 					{#if isSubmitting}
 						<IconLoader2 class="mr-2 h-4 w-4 animate-spin" />
 						Creating...

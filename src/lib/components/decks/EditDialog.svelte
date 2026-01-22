@@ -55,6 +55,11 @@
 	function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
 		if (!name.trim() || !item || isSubmitting) return;
+		
+		// Validate packages for decks
+		if (item.type === 'deck' && !allPackages && selectedPackages.length === 0) {
+			return;
+		}
 
 		const packages =
 			item.type === 'deck'
@@ -147,40 +152,43 @@
 							</label>
 						</div>
 
-						{#if !allPackages}
-							<div class="space-y-2 ml-6">
-								{#each availablePackages as pkg}
-									<div class="flex items-center space-x-2">
-										<Checkbox
-											id={`edit-pkg-${pkg}`}
-											checked={selectedPackages.includes(pkg)}
-											onCheckedChange={() => togglePackage(pkg)}
-											disabled={isSubmitting}
-										/>
-										<label
-											for={`edit-pkg-${pkg}`}
-											class="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize"
-										>
-											{pkg}
-										</label>
-									</div>
-								{/each}
-							</div>
-						{/if}
+					{#if !allPackages}
+						<div class="space-y-2 ml-6">
+							{#if selectedPackages.length === 0}
+								<p class="text-sm text-red-500">Please select at least one package</p>
+							{/if}
+							{#each availablePackages as pkg}
+								<div class="flex items-center space-x-2">
+									<Checkbox
+										id={`edit-pkg-${pkg}`}
+										checked={selectedPackages.includes(pkg)}
+										onCheckedChange={() => togglePackage(pkg)}
+										disabled={isSubmitting}
+									/>
+									<label
+										for={`edit-pkg-${pkg}`}
+										class="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize"
+									>
+										{pkg}
+									</label>
+								</div>
+							{/each}
+						</div>
+					{/if}
 					</div>
 				{/if}
 
-				<Dialog.Footer>
-					<Button type="button" variant="outline" onclick={() => (open = false)} disabled={isSubmitting}>Cancel</Button>
-					<Button type="submit" disabled={isSubmitting}>
-						{#if isSubmitting}
-							<IconLoader2 class="mr-2 h-4 w-4 animate-spin" />
-							Saving...
-						{:else}
-							Save Changes
-						{/if}
-					</Button>
-				</Dialog.Footer>
+			<Dialog.Footer>
+				<Button type="button" variant="outline" onclick={() => (open = false)} disabled={isSubmitting}>Cancel</Button>
+				<Button type="submit" disabled={isSubmitting || (item?.type === 'deck' && !allPackages && selectedPackages.length === 0)}>
+					{#if isSubmitting}
+						<IconLoader2 class="mr-2 h-4 w-4 animate-spin" />
+						Saving...
+					{:else}
+						Save Changes
+					{/if}
+				</Button>
+			</Dialog.Footer>
 			</form>
 		{/if}
 	</Dialog.Content>

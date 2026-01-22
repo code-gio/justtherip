@@ -82,6 +82,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         name: pack.name,
         image: pack.image_url || null,
         price: pack.rip_cost,
+        game_code: pack.game_code,
         topCards: [],
       };
 

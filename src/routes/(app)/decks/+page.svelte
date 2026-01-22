@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import type { DeckFolder, DeckFolderWithChildren, DeckFolderType } from '$lib/types/decks';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidateAll, goto } from '$app/navigation';
 	import { IconPlus, IconFolderPlus, IconFileText, IconLoader2 } from '@tabler/icons-svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import FolderCard from '$lib/components/decks/FolderCard.svelte';
@@ -116,6 +116,10 @@
 	function openMoveDialog(item: DeckFolder) {
 		movingItem = item;
 		moveDialogOpen = true;
+	}
+
+	function openDeck(deck: DeckFolder) {
+		goto(`/decks/${deck.id}`);
 	}
 
 	async function handleCreate(formData: {
@@ -428,6 +432,7 @@
 						{:else}
 							<DeckCard
 								deck={item}
+								onClick={openDeck}
 								onEdit={openEditDialog}
 								onDelete={handleDelete}
 								onMove={openMoveDialog}

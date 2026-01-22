@@ -21,6 +21,7 @@ Migration scripts should be executed in order. Each file is prefixed with a numb
 
 - `001_create_deck_folders_table.sql` - Creates the deck_folders table with recursive folder structure
 - `002_create_deck_cards_table.sql` - Creates the deck_cards table for managing cards within decks
+- `003_add_categories_to_deck_folders.sql` - Adds explicit categories array for better card organization
 
 ### Policies (`database/policies/`)
 Row Level Security (RLS) policies for Supabase:
@@ -52,6 +53,7 @@ Feature-specific documentation:
 
 - `quick_instructions.md` - Quick reference for common tasks
 - `bulk_import.md` - Guide for bulk importing cards
+- `deck_categories.md` - Complete guide to deck categories system
 - `pack_creation_agent.md` - Instructions for the pack creation agent
 
 ## 🚀 Quick Start
@@ -63,6 +65,7 @@ Feature-specific documentation:
    # In Supabase SQL Editor, run in this order:
    # 1. database/migrations/001_create_deck_folders_table.sql
    # 2. database/migrations/002_create_deck_cards_table.sql
+   # 3. database/migrations/003_add_categories_to_deck_folders.sql (if upgrading)
    ```
 
 2. Apply RLS policies:

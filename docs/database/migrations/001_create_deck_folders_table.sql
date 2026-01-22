@@ -5,6 +5,7 @@ create table public.deck_folders (
   type character varying(10) not null,
   status character varying(20) not null default 'private'::character varying,
   packages text[] null,
+  categories text[] null default array['Uncategorized']::text[],
   user_id uuid not null,
   parent_id uuid null,
   position integer not null default 0,

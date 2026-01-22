@@ -13,6 +13,7 @@ Sequential SQL scripts for database schema creation and updates. Execute in nume
 |------|-------------|--------------|
 | `001_create_deck_folders_table.sql` | Creates deck_folders table with recursive structure for organizing decks in folders | Requires `profiles` table |
 | `002_create_deck_cards_table.sql` | Creates deck_cards table for managing cards within decks | Requires `deck_folders` table |
+| `003_add_categories_to_deck_folders.sql` | Adds explicit categories array to deck_folders for better column management | Run after 001 and 002 |
 
 ### `/policies`
 Row Level Security (RLS) policies for data access control.
@@ -44,6 +45,9 @@ Execute migrations in order using Supabase SQL Editor:
 
 -- Step 2: Execute migration 002
 -- Copy and paste content from 002_create_deck_cards_table.sql
+
+-- Step 3: Execute migration 003 (if upgrading existing database)
+-- Copy and paste content from 003_add_categories_to_deck_folders.sql
 ```
 
 ### 2. Apply Policies
@@ -82,6 +86,7 @@ Stores folders and decks in a recursive tree structure.
 - `type` - 'folder' or 'deck'
 - `status` - 'private', 'unlisted', or 'public'
 - `packages` - Array of package types (null = all packages)
+- `categories` - Array of category names for organizing cards (deck type only)
 - `user_id` - Owner reference
 - `parent_id` - Self-referencing FK for hierarchy
 - `position` - Display order

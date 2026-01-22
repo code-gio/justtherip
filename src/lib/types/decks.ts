@@ -8,6 +8,7 @@ export interface DeckFolder {
 	type: DeckFolderType;
 	status: DeckFolderStatus;
 	packages: string[] | null;
+	categories: string[] | null;
 	user_id: string;
 	parent_id: string | null;
 	position: number;
@@ -24,6 +25,7 @@ export interface CreateDeckFolderInput {
 	type: DeckFolderType;
 	status?: DeckFolderStatus;
 	packages?: string[] | null;
+	categories?: string[] | null;
 	parent_id?: string | null;
 	position?: number;
 }
@@ -33,6 +35,7 @@ export interface UpdateDeckFolderInput {
 	name?: string;
 	status?: DeckFolderStatus;
 	packages?: string[] | null;
+	categories?: string[] | null;
 	parent_id?: string | null;
 	position?: number;
 }

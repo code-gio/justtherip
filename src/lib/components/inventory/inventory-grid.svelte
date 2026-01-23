@@ -59,7 +59,7 @@
       </Empty.Description>
     </Empty.Header>
     <Empty.Content>
-      <Button href="/packs">
+      <Button href="/packs" class="text-white">
         <IconSparkles class="mr-2" size={18} />
         Open Packs
       </Button>

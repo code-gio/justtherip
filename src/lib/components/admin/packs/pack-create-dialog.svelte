@@ -300,7 +300,7 @@
         <Button type="button" variant="outline" onclick={() => (open = false)}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading} class="text-white">
           {isLoading ? "Creating..." : "Create Pack"}
         </Button>
       </Dialog.Footer>

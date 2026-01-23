@@ -355,7 +355,7 @@
 
         <!-- Verify Button -->
         <Button
-          class="w-full"
+          class="w-full text-white"
           onclick={handleVerify}
           disabled={!textInput.trim() || isVerifying}
         >
@@ -371,7 +371,7 @@
       <!-- STEP 2: Verification Results -->
       <div class="space-y-4">
         <!-- Back Button -->
-        <Button variant="outline" onclick={handleBack} class="w-full">
+        <Button variant="outline" onclick={handleBack} class="w-full text-white">
           <IconArrowLeft size={16} class="mr-2" />
           Back to Edit
         </Button>
@@ -472,7 +472,7 @@
 
         <!-- Import Button -->
         {#if verificationResult && verificationResult.found.length > 0}
-          <Button class="w-full" onclick={handleImport}>
+          <Button class="w-full text-white" onclick={handleImport} >
             Import {verificationResult.found.length} Card{verificationResult
               .found.length !== 1
               ? "s"

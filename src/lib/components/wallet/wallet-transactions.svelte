@@ -120,6 +120,7 @@
         <Button
           variant={activeFilter === "all" ? "default" : "outline"}
           size="sm"
+          class="text-white"
           onclick={() => (activeFilter = "all")}
         >
           All
@@ -127,6 +128,7 @@
         <Button
           variant={activeFilter === "purchase" ? "default" : "outline"}
           size="sm"
+          class="text-white"
           onclick={() => (activeFilter = "purchase")}
         >
           Purchases
@@ -134,6 +136,7 @@
         <Button
           variant={activeFilter === "pack_open" ? "default" : "outline"}
           size="sm"
+          class="text-white"
           onclick={() => (activeFilter = "pack_open")}
         >
           Packs Opened

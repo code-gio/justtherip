@@ -66,7 +66,7 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-  class="flex-shrink-0 w-full flex flex-col rounded-lg p-3 border-2 transition-all relative
+  class="flex-shrink-0 w-full flex flex-col rounded-lg p-3 border-2 transition-all relative 
 		{isFixed ? 'bg-muted/50' : 'bg-muted/30'}
 		{isDragOver
     ? 'border-primary bg-primary/5'
@@ -88,7 +88,7 @@
   {/if}
 
   <!-- Category Header -->
-  <div class="flex items-center justify-between mb-3">
+  <div class="flex items-center justify-between mb-3 ">
     {#if isRenaming && !isFixed}
       <div class="flex-1 flex gap-2">
         <Input
@@ -173,7 +173,7 @@
       {/each}
     {:else}
       <div
-        class="w-full {isFixed ? 'h-32' : 'aspect-[2.5/3.5]'} bg-muted/50 rounded-lg border-2 border-dashed border-muted-foreground/20 flex items-center justify-center"
+        class="w-full  h-full bg-muted/50 rounded-lg border-2 border-dashed border-muted-foreground/20 flex items-center justify-center"
       >
         <p class="text-xs text-muted-foreground text-center px-2">
           {isFixed ? "Drop cards here" : "No cards yet"}

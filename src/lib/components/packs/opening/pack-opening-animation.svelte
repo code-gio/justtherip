@@ -642,6 +642,7 @@
         <Button
           variant="secondary"
           size="lg"
+          class="text-white"
           onclick={() => {
             if (card) {
               onShip(card.id);
@@ -652,7 +653,7 @@
           <IconPackage size={18} class="mr-2" />
           Ship Card
         </Button>
-        <Button size="lg" onclick={onOpenAnother} disabled={isSelling || isShipping}>
+        <Button size="lg" onclick={onOpenAnother} disabled={isSelling || isShipping} class="text-white">
           <IconSparkles size={18} class="mr-2" />
           Open Another
         </Button>

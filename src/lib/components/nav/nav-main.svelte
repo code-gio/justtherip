@@ -16,7 +16,7 @@
     <Sidebar.Menu>
       <Sidebar.MenuItem class="flex items-center gap-2">
         <Sidebar.MenuButton
-          class="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
+          class="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear text-white"
           tooltipContent="Buy Rips"
         >
           {#snippet child({ props })}

@@ -202,6 +202,7 @@
           />
           <Button
             onclick={handleSearch}
+            class="text-white"
             disabled={!searchQuery.trim() || isSearching}
           >
             {#if isSearching}

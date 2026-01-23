@@ -85,7 +85,7 @@
           <Button variant="outline" onclick={() => goto("/wallet")} class="flex-1">
             View Wallet
           </Button>
-          <Button onclick={() => goto("/packs")} class="flex-1">
+          <Button onclick={() => goto("/packs")} class="flex-1 text-white">
             <IconSparkles size={18} class="mr-2" />
             Open Packs
           </Button>

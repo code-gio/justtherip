@@ -14,6 +14,9 @@
   let isLandingPage = $derived(page.url.pathname === "/" || page.url.pathname === "");
 
   onMount(() => {
+    // Force light mode
+    document.documentElement.classList.remove('dark');
+    
     // Listen for auth state changes
     const { data: authData } = supabase.auth.onAuthStateChange(
       (event, _session) => {
@@ -63,12 +66,18 @@
   });
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
+<svelte:head>
+  <link rel="icon" href={favicon} />
+  <script>
+    // Force light mode immediately before page renders
+    document.documentElement.classList.remove('dark');
+  </script>
+</svelte:head>
 {#if isLandingPage}
   <NavLanding {session} />
 {/if}
 <div class="h-dvh">
   <Toaster />
-  <ModeWatcher />
+  <ModeWatcher track={false} defaultMode="light" disableTransitions />
   {@render children()}
 </div>

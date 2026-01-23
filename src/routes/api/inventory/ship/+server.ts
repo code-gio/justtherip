@@ -130,6 +130,16 @@ export const POST: RequestHandler = async ({ locals, request }) => {
         .join(", ");
     }
 
+    // Determine card tier based on value
+    const getCardTier = (valueCents: number): string => {
+      if (valueCents >= 50000) return "legendary";
+      if (valueCents >= 5000) return "epic";
+      if (valueCents >= 500) return "rare";
+      return "common";
+    };
+
+    const cardTier = getCardTier(card.card_value_cents);
+
     // Create shipment record
     const { data: shipment, error: shipmentError } = await adminClient
       .from("shipments")
@@ -142,6 +152,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
         shipping_name: shippingName,
         shipping_phone: shippingPhone,
         card_name: card.card_name,
+        card_tier_name: cardTier,
         card_value_cents: card.card_value_cents,
         card_image_url: card.card_image_url,
       })

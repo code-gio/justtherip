@@ -402,7 +402,7 @@
             <div class="p-1.5 rounded-md bg-muted">
               <IconSparkles size={18} />
             </div>
-            <div class="text-left">
+            <div class="text-left  text-white">
               <div class="font-medium">Open a Pack</div>
               <div class="text-xs text-muted-foreground">Try your luck!</div>
             </div>

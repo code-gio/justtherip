@@ -17,7 +17,7 @@
       with odds, and activate/deactivate packs.
     </p>
   </div>
-  <Button onclick={onCreatePack}>
+  <Button onclick={onCreatePack} class="text-white">
     <IconPlus size={18} class="mr-2" />
     Create New Pack
   </Button>

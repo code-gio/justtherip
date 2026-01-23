@@ -63,11 +63,11 @@
 
   <!-- Button Group -->
   <div class="flex flex-wrap gap-2">
-    <Button onclick={onBuyRips} class="gap-2">
+    <Button onclick={onBuyRips} class="gap-2 text-white">
       <IconPlus size={16} />
       Buy Rips
     </Button>
-    <Button variant="outline" href="/packs" class="gap-2">
+    <Button variant="outline" href="/packs" class="gap-2  text-white">
       <IconSparkles size={16} />
       Open Packs
     </Button>

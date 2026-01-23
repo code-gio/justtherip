@@ -140,7 +140,7 @@
               </Empty.Description>
             </Empty.Header>
             <Empty.Content>
-              <Button href="/inventory">
+              <Button href="/inventory" class="text-white">
                 <IconTrophy size={18} class="mr-2" />
                 View Inventory
               </Button>

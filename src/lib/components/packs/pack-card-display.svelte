@@ -89,14 +89,20 @@
     text-decoration: none;
     color: inherit;
     border-radius: 24px;
-    overflow: hidden;
+    overflow: visible;
     transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
-                box-shadow 0.3s ease;
+                box-shadow 0.3s ease,
+                z-index 0.1s ease;
     padding: 2rem 1.5rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     cursor: pointer;
+    z-index: 1;
+  }
+
+  .pack-card:hover {
+    z-index: 10;
   }
 
   .pack-card-bg {
@@ -113,6 +119,8 @@
       transparent 55%
     );
     transition: all 0.3s ease;
+    border-radius: 24px;
+    overflow: hidden;
   }
 
   .pack-card:hover .pack-card-bg {
@@ -147,10 +155,12 @@
     aspect-ratio: 1;
     margin-bottom: 0.25rem;
     transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 2;
   }
 
   .pack-card:hover .pack-image-container {
     transform: translateY(-10px);
+    z-index: 20;
   }
 
   .pack-image {

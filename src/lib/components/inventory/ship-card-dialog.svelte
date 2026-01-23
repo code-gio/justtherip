@@ -424,7 +424,7 @@
             Cancel
           </Button>
           <Button
-            class="flex-1"
+            class="flex-1 text-white"
             onclick={handleShip}
             disabled={isShipping || (showAddForm && (!formData.name || !formData.address_line1 || !formData.city || !formData.state || !formData.postal_code))}
           >

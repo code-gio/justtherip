@@ -224,62 +224,65 @@
     <div class="px-6 pb-12 max-w-7xl mx-auto">
       <div class="max-w-md mx-auto space-y-6">
         <!-- Pack Image or Fanned Cards -->
-        {#if pack.topCards && pack.topCards.length > 0}
-          <!-- Fanned Cards Display -->
-          <div class="relative aspect-square flex items-center justify-center">
-            <FannedCards cards={pack.topCards} />
-            <!-- Opening Overlay -->
-            {#if isOpening}
-              <div class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-3xl">
-                <div class="text-center">
-                  <IconLoader2
-                    size={64}
-                    class="text-white animate-spin mx-auto mb-4"
-                  />
-                  <p class="text-white text-xl font-bold">Opening...</p>
+        <div class="pack-card-wrapper group">
+          <div class="pack-card-bg"></div>
+          {#if pack.topCards && pack.topCards.length > 0}
+            <!-- Fanned Cards Display -->
+            <div class="relative aspect-square flex items-center justify-center pack-image-container">
+              <FannedCards cards={pack.topCards} />
+              <!-- Opening Overlay -->
+              {#if isOpening}
+                <div class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-3xl">
+                  <div class="text-center">
+                    <IconLoader2
+                      size={64}
+                      class="text-white animate-spin mx-auto mb-4"
+                    />
+                    <p class="text-white text-xl font-bold">Opening...</p>
+                  </div>
                 </div>
-              </div>
-            {/if}
-          </div>
-        {:else if pack.image_url}
-          <!-- Fallback to Pack Image -->
-          <div class="relative aspect-square rounded-3xl overflow-hidden shadow-2xl bg-muted">
-            <img
-              src={pack.image_url}
-              alt={pack.name}
-              class="w-full h-full object-cover"
-            />
-            <!-- Opening Overlay -->
-            {#if isOpening}
-              <div class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-3xl">
-                <div class="text-center">
-                  <IconLoader2
-                    size={64}
-                    class="text-white animate-spin mx-auto mb-4"
-                  />
-                  <p class="text-white text-xl font-bold">Opening...</p>
+              {/if}
+            </div>
+          {:else if pack.image_url}
+            <!-- Fallback to Pack Image -->
+            <div class="relative aspect-square rounded-3xl overflow-hidden shadow-2xl bg-muted pack-image-container">
+              <img
+                src={pack.image_url}
+                alt={pack.name}
+                class="w-full h-full object-cover pack-image"
+              />
+              <!-- Opening Overlay -->
+              {#if isOpening}
+                <div class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-3xl">
+                  <div class="text-center">
+                    <IconLoader2
+                      size={64}
+                      class="text-white animate-spin mx-auto mb-4"
+                    />
+                    <p class="text-white text-xl font-bold">Opening...</p>
+                  </div>
                 </div>
-              </div>
-            {/if}
-          </div>
-        {:else}
-          <!-- Placeholder -->
-          <div class="relative aspect-square rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-pink-500 flex items-center justify-center">
-            <IconPackage size={64} class="text-white/50" />
-            <!-- Opening Overlay -->
-            {#if isOpening}
-              <div class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-3xl">
-                <div class="text-center">
-                  <IconLoader2
-                    size={64}
-                    class="text-white animate-spin mx-auto mb-4"
-                  />
-                  <p class="text-white text-xl font-bold">Opening...</p>
+              {/if}
+            </div>
+          {:else}
+            <!-- Placeholder -->
+            <div class="relative aspect-square rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-pink-500 flex items-center justify-center pack-image-container">
+              <IconPackage size={64} class="text-white/50" />
+              <!-- Opening Overlay -->
+              {#if isOpening}
+                <div class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-3xl">
+                  <div class="text-center">
+                    <IconLoader2
+                      size={64}
+                      class="text-white animate-spin mx-auto mb-4"
+                    />
+                    <p class="text-white text-xl font-bold">Opening...</p>
+                  </div>
                 </div>
-              </div>
-            {/if}
-          </div>
-        {/if}
+              {/if}
+            </div>
+          {/if}
+        </div>
 
         <!-- Pack Name -->
         <div class="text-center">
@@ -312,7 +315,7 @@
             </div>
           {:else}
             <Button
-              class="w-full"
+              class="w-full text-white"
               size="lg"
               onclick={openPack}
               disabled={isOpening}
@@ -422,3 +425,64 @@
     onClose={closeShipDialog}
   />
 {/if}
+
+<style>
+  .pack-card-wrapper {
+    position: relative;
+    border-radius: 24px;
+    padding: 2rem 1.5rem;
+    overflow: visible;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.3s ease,
+                z-index 0.1s ease;
+    cursor: pointer;
+    z-index: 1;
+  }
+
+  .pack-card-wrapper:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+  }
+
+  .pack-card-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    background: linear-gradient(0deg, rgba(124, 58, 237, 0.6) 0%, rgba(91, 33, 182, 0.4) 20%, transparent 55%);
+    transition: all 0.3s ease;
+    border-radius: 24px;
+    pointer-events: none;
+  }
+
+  .pack-card-wrapper:hover .pack-card-bg {
+    background: linear-gradient(0deg, rgba(124, 58, 237, 0.85) 0%, rgba(91, 33, 182, 0.65) 40%, transparent 100%);
+  }
+
+  .pack-image-container {
+    position: relative;
+    z-index: 2;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .pack-card-wrapper:hover .pack-image-container {
+    transform: translateY(-10px);
+    z-index: 20;
+  }
+
+  .pack-image {
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .pack-card-wrapper:hover .pack-image {
+    transform: scale(1.08);
+  }
+
+  :global(.pack-card-wrapper .pack-image-container > *) {
+    position: relative;
+    z-index: inherit;
+  }
+</style>

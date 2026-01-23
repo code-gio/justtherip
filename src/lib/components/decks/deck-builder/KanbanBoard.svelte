@@ -65,9 +65,9 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="flex gap-3 h-[1800px]">
+<div class="flex gap-3 h-[1800px] mt-8 ">
 	<!-- Scrollable Categories Container -->
-	<div class="flex gap-3 overflow-x-auto pb-4 flex-1">
+	<div class="flex gap-3 overflow-x-auto pb-4 flex-1 ">
 		<!-- Regular Categories -->
 		{#each categories as category}
 			{@const categoryCards = cardsByCategory[category] || []}
@@ -75,7 +75,7 @@
 			{@const count = getCategoryCount(category)}
 			{@const isFixed = fixedColumns.includes(category)}
 
-			<div class="flex-shrink-0 w-[240px] h-full">
+			<div class="flex-shrink-0 w-[240px] h-full ">
 				<KanbanColumn
 					{category}
 					cards={filteredCards}
@@ -104,7 +104,7 @@
 	</div>
 
 	<!-- Fixed Columns (Sideboard & Maybeboard) - Right Side -->
-	<div class="flex flex-col gap-6 flex-shrink-0 w-[240px]">
+	<div class="flex flex-col gap-6 flex-shrink-0 w-[240px] ">
 		{#each fixedColumns as category}
 			{@const categoryCards = cardsByCategory[category] || []}
 			{@const filteredCards = getFilteredCards(categoryCards)}

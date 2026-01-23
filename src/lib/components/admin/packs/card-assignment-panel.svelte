@@ -276,6 +276,7 @@
   <div class="flex justify-end">
     <Button
       variant="default"
+      class="text-white"
       onclick={() => { bulkImportOpen = true; }}
       disabled={!gameCode}
     >

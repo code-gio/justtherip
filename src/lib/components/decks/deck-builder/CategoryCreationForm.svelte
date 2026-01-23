@@ -25,10 +25,10 @@
 				if (e.key === 'Escape') onCancel();
 			}}
 		/>
-		<Button size="icon" variant="default" onclick={onSave} disabled={!newCategoryName.trim()}>
+		<Button size="icon" variant="default" class="text-white" onclick={onSave} disabled={!newCategoryName.trim()}>
 			<IconCheck class="h-4 w-4" />
 		</Button>
-		<Button size="icon" variant="ghost" onclick={onCancel}>
+		<Button size="icon" variant="ghost" onclick={onCancel} class="text-white">
 			<IconX class="h-4 w-4" />
 		</Button>
 	</div>

@@ -365,11 +365,11 @@
 		<div class="flex items-center justify-between mb-4">
 			<h1 class="text-3xl font-bold">Decks</h1>
 			<div class="flex gap-2">
-				<Button onclick={() => openCreateDialog('folder')} variant="outline">
+				<Button onclick={() => openCreateDialog('folder')} variant="outline" class="text-white">
 					<IconFolderPlus class="h-4 w-4 mr-2" />
 					New Folder
 				</Button>
-				<Button onclick={() => openCreateDialog('deck')}>
+				<Button onclick={() => openCreateDialog('deck')} class="text-white">
 					<IconPlus class="h-4 w-4 mr-2" />
 					New Deck
 				</Button>

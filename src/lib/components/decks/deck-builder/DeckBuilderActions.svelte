@@ -29,7 +29,7 @@
 		</Input>
 	</div>
 
-	<Button onclick={onSearchOpen}>
+	<Button onclick={onSearchOpen} class="text-white">
 		<IconSearch class="h-4 w-4 mr-2" />
 		Card Search
 	</Button>

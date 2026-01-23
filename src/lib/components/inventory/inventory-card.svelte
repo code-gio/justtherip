@@ -229,7 +229,7 @@
               {/if}
             </Button>
             <Button
-              class="w-full"
+              class="w-full text-white"
               onclick={() => {
                 dialogOpen = false;
                 onShip(card.id);

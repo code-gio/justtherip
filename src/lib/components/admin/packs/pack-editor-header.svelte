@@ -53,6 +53,7 @@
       <Button
         onclick={onPublish}
         disabled={!canPublish || isLoading}
+        class="text-white"
       >
         <IconRocket size={18} class="mr-2" />
         Publish
@@ -62,6 +63,7 @@
         variant="destructive"
         onclick={onUnpublish}
         disabled={isLoading}
+        class="text-white"
       >
         <IconBan size={18} class="mr-2" />
         Unpublish

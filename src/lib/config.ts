@@ -16,6 +16,7 @@ import {
   IconSettings,
   IconReceipt,
   IconFolder,
+  IconSparkles,
 } from "@tabler/icons-svelte";
 
 export const siteConfig = {
@@ -24,6 +25,7 @@ export const siteConfig = {
   logo: "/logo.svg",
   logoDark: "/logo-white.svg",
   favicon: "/favicon.png",
+  ripToUsd: 1.0,
 };
 
 export const socialLinks: SocialLink[] = [
@@ -88,6 +90,11 @@ export const adminNav: NavItem[] = [
     title: "Manage Packs",
     url: "/admin/packs",
     icon: IconPackages,
+  },
+  {
+    title: "Simulator",
+    url: "/admin/simulator",
+    icon: IconSparkles,
   },
   {
     title: "Card Catalog",

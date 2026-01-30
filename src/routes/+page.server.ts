@@ -46,6 +46,35 @@ export const load: PageServerLoad = async () => {
     .select("pack_id");
 
 
+  const { data: packsActived, error: packsError } = await adminClient
+    .from("packs")
+    .select(`
+        id,
+        name,
+        slug,
+        image_url,
+        game_code,
+        rip_cost,
+        total_openings
+      `)
+    .eq("is_active", true);
+
+
+  const packsByCode = Object.values(
+    packsActived?.reduce((acc: any, pack: any) => {
+      if (!acc[pack.game_code]) {
+        acc[pack.game_code] = {
+          game_code: pack.game_code,
+          packs: 0
+        };
+      }
+
+      acc[pack.game_code].packs += 1;
+      return acc;
+    }, {})
+  )
+
+
   // Count openings per pack
   const openingsMap = new Map<string, number>();
   (packOpeningsCount || []).forEach((opening: any) => {
@@ -85,6 +114,7 @@ export const load: PageServerLoad = async () => {
       return topPackIds.indexOf(a.id) - topPackIds.indexOf(b.id);
     });
   }
+
 
   // Fetch top 3 cards for each pack
   const topPacksWithCards = await Promise.all(
@@ -289,5 +319,6 @@ export const load: PageServerLoad = async () => {
     topPacks: topPacksWithCards || [],
     recentPulls,
     rarePulls,
+    packsByGame: packsByCode,
   };
 };

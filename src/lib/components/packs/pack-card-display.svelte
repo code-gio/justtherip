@@ -29,9 +29,6 @@
   } = $props();
 
 
-  $effect(() => {
-    console.log(pack);
-  });
 </script>
 
 <div

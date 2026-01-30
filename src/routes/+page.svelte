@@ -63,7 +63,7 @@
     <!-- Build for the Moment Section -->
     <HomeBuildMoment />
     <!-- Games Section -->
-    <HomeGames />
+    <HomeGames packsByGame={data.packsByGame} />
     <HomeFeatures />
     <HomeFeaturedPacks />
     <!-- Footer -->

@@ -1,16 +1,37 @@
 <script lang="ts">
-  const games = [
-    {
-      name: "pokemon",
-      image: "/landing/games/pokemon.svg",
-      packs: 24,
-    },
-    {
+  interface GameData {
+    game_code: string;
+    packs: number;
+  }
+
+  interface Props {
+    packsByGame: GameData[];
+  }
+
+  let { packsByGame }: Props = $props();
+
+  const gameMap: Record<string, { name: string; image: string }> = {
+    mtg: {
       name: "magic",
-      image: "/landing/games/magic.svg",
-      packs: 18,
+      image: "/landing/games/magic.svg"
     },
-  ];
+    pokemon: {
+      name: "pokemon",
+      image: "/landing/games/pokemon.svg"
+    }
+  };
+
+  const games = $derived(
+    Object.entries(gameMap).map(([code, { name, image }]) => {
+      const gameData = packsByGame?.find(g => g.game_code === code);
+      return {
+        code,
+        name,
+        image,
+        packs: gameData?.packs ?? 0
+      };
+    })
+  );
 </script>
 
 <section class="games-section">
@@ -27,7 +48,11 @@
             <img src={game.image} alt={game.name} class="game-image" />
           </div>
           <div class="game-info">
-            <span class="packs-available">{game.packs} PACKS AVAILABLE</span>
+            {#if game.packs > 0}
+              <span class="packs-available">{game.packs} PACKS AVAILABLE</span>
+            {:else}
+              <span class="packs-available">COMING SOON</span>
+            {/if}
           </div>
         </a>
       {/each}

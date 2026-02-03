@@ -37,7 +37,7 @@
   let showZoom = $state(false);
   let activeTab = $state<"recent" | "rare">("recent");
   let carouselTrack: HTMLElement | null = $state(null);
-  let animationDuration = $state(30);
+  let animationDuration = $state(120);
   let manualOffset = $state(0);
 
   let displayedPulls = $derived(activeTab === "recent" ? recentPulls : rarePulls);

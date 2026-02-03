@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { IconUser, IconX, IconClock, IconSparkles } from "@tabler/icons-svelte";
+  import { IconUser, IconX, IconClock, IconSparkles, IconChevronLeft, IconChevronRight } from "@tabler/icons-svelte";
   import * as Dialog from "$lib/components/ui/dialog";
   import * as Tabs from "$lib/components/ui/tabs";
 
@@ -36,8 +36,17 @@
   let zoomPosition = $state({ x: 0, y: 0 });
   let showZoom = $state(false);
   let activeTab = $state<"recent" | "rare">("recent");
+  let carouselTrack: HTMLElement | null = $state(null);
+  let animationDuration = $state(30);
+  let manualOffset = $state(0);
 
   let displayedPulls = $derived(activeTab === "recent" ? recentPulls : rarePulls);
+
+  const CARD_WIDTH = 240;
+  const CARD_GAP = 24;
+  const CARD_SCROLL_DISTANCE = CARD_WIDTH + CARD_GAP;
+  const CARDS_PER_SCROLL = 3;
+  const SCROLL_STEP = CARD_SCROLL_DISTANCE * CARDS_PER_SCROLL;
 
   function formatTimeAgo(dateString: string): string {
     const now = new Date();
@@ -83,6 +92,30 @@
   function handleMouseLeave() {
     showZoom = false;
   }
+
+  function scrollCarouselLeft() {
+    if (carouselTrack) {
+      manualOffset = manualOffset + SCROLL_STEP;
+      carouselTrack.style.setProperty('--manual-offset', `${manualOffset}px`);
+      carouselTrack.style.transition = 'transform 0.6s ease-in-out';
+      
+      setTimeout(() => {
+        carouselTrack.style.transition = '';
+      }, 600);
+    }
+  }
+
+  function scrollCarouselRight() {
+    if (carouselTrack) {
+      manualOffset = manualOffset - SCROLL_STEP;
+      carouselTrack.style.setProperty('--manual-offset', `${manualOffset}px`);
+      carouselTrack.style.transition = 'transform 0.6s ease-in-out';
+      
+      setTimeout(() => {
+        carouselTrack.style.transition = '';
+      }, 600);
+    }
+  }
 </script>
 
 <section class="collectors">
@@ -107,132 +140,90 @@
 
     {#if displayedPulls.length > 0}
       <div class="carousel-wrapper" class:paused={isDialogOpen}>
-        <div class="carousel-track">
-          <!-- First set of cards -->
-          {#each displayedPulls as pull (pull.id)}
-            <div class="pull-card" onclick={() => openCardDialog(pull)}>
-              <div class="card-image-wrapper">
-                {#if pull.card_image_url}
-                  <img
-                    src={pull.card_image_url}
-                    alt={pull.card_name}
-                    class="card-image"
-                    loading="lazy"
-                  />
-                {:else}
-                  <div class="card-placeholder">
-                    <span>No Image</span>
-                  </div>
-                {/if}
-                <div class="badges-container">
-                  {#if pull.rarity}
-                    <div class="rarity-badge rarity-{pull.rarity.toLowerCase()}">
-                      {pull.rarity.toUpperCase()}
-                    </div>
-                  {/if}
-                  {#if pull.is_foil}
-                    <div class="foil-badge">FOIL</div>
-                  {/if}
-                </div>
-              </div>
+        <button 
+          class="carousel-btn carousel-btn-left" 
+          onclick={scrollCarouselLeft}
+          aria-label="Scroll carousel left"
+        >
+          <IconChevronLeft size={24} />
+        </button>
 
-              <div class="card-content">
-                <h3 class="card-name" title={pull.card_name}>
-                  {pull.card_name}
-                </h3>
-                <div class="card-value">
-                  {formatPrice(pull.card_value_cents)}
-                </div>
-              </div>
-
-              <div class="card-footer">
-                <div class="user-info">
-                  {#if pull.profiles?.avatar_url}
+        <div class="carousel-track" bind:this={carouselTrack} style="animation-duration: {animationDuration}s;">
+          <!-- Cards cloned 8 times for infinite scroll effect -->
+          {#each Array(8) as _, iteration}
+            {#each displayedPulls as pull (`${pull.id}-${iteration}`)}
+              <!-- svelte-ignore a11y_click_events_have_key_events -->
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div class="pull-card" onclick={() => openCardDialog(pull)}>
+                <div class="card-image-wrapper">
+                  {#if pull.card_image_url}
                     <img
-                      src={pull.profiles.avatar_url}
-                      alt={pull.profiles.display_name || pull.profiles.username || "User"}
-                      class="user-avatar"
+                      src={pull.card_image_url}
+                      alt={pull.card_name}
+                      class="card-image"
+                      loading="lazy"
                     />
                   {:else}
-                    <div class="user-avatar-placeholder">
-                      <IconUser size={16} />
+                    <div class="card-placeholder">
+                      <span>No Image</span>
                     </div>
                   {/if}
-                  <div class="user-details">
-                    <span class="username">
-                      {pull.profiles?.display_name || pull.profiles?.username || "Anonymous"}
-                    </span>
-                    <span class="pull-time">
-                      {formatTimeAgo(pull.created_at)}
-                    </span>
+                  <div class="badges-container">
+                    {#if pull.rarity}
+                      <div class="rarity-badge rarity-{pull.rarity.toLowerCase()}">
+                        {pull.rarity.toUpperCase()}
+                      </div>
+                    {/if}
+                    {#if pull.is_foil}
+                      <div class="foil-badge">FOIL</div>
+                    {/if}
                   </div>
                 </div>
-              </div>
-            </div>
-          {/each}
-          <!-- Duplicate set for infinite loop effect -->
-          {#each displayedPulls as pull (`${pull.id}-duplicate`)}
-            <div class="pull-card" onclick={() => openCardDialog(pull)}>
-              <div class="card-image-wrapper">
-                {#if pull.card_image_url}
-                  <img
-                    src={pull.card_image_url}
-                    alt={pull.card_name}
-                    class="card-image"
-                    loading="lazy"
-                  />
-                {:else}
-                  <div class="card-placeholder">
-                    <span>No Image</span>
-                  </div>
-                {/if}
-                <div class="badges-container">
-                  {#if pull.rarity}
-                    <div class="rarity-badge rarity-{pull.rarity.toLowerCase()}">
-                      {pull.rarity.toUpperCase()}
-                    </div>
-                  {/if}
-                  {#if pull.is_foil}
-                    <div class="foil-badge">FOIL</div>
-                  {/if}
-                </div>
-              </div>
 
-              <div class="card-content">
-                <h3 class="card-name" title={pull.card_name}>
-                  {pull.card_name}
-                </h3>
-                <div class="card-value">
-                  {formatPrice(pull.card_value_cents)}
+                <div class="card-content">
+                  <h3 class="card-name" title={pull.card_name}>
+                    {pull.card_name}
+                  </h3>
+                  <div class="card-value">
+                    {formatPrice(pull.card_value_cents)}
+                  </div>
                 </div>
-              </div>
 
-              <div class="card-footer">
-                <div class="user-info">
-                  {#if pull.profiles?.avatar_url}
-                    <img
-                      src={pull.profiles.avatar_url}
-                      alt={pull.profiles.display_name || pull.profiles.username || "User"}
-                      class="user-avatar"
-                    />
-                  {:else}
-                    <div class="user-avatar-placeholder">
-                      <IconUser size={16} />
+                <div class="card-footer">
+                  <div class="user-info">
+                    {#if pull.profiles?.avatar_url}
+                      <img
+                        src={pull.profiles.avatar_url}
+                        alt={pull.profiles.display_name || pull.profiles.username || "User"}
+                        class="user-avatar"
+                      />
+                    {:else}
+                      <div class="user-avatar-placeholder">
+                        <IconUser size={16} />
+                      </div>
+                    {/if}
+                    <div class="user-details">
+                      <span class="username">
+                        {pull.profiles?.display_name || pull.profiles?.username || "Anonymous"}
+                      </span>
+                      <span class="pull-time">
+                        {formatTimeAgo(pull.created_at)}
+                      </span>
                     </div>
-                  {/if}
-                  <div class="user-details">
-                    <span class="username">
-                      {pull.profiles?.display_name || pull.profiles?.username || "Anonymous"}
-                    </span>
-                    <span class="pull-time">
-                      {formatTimeAgo(pull.created_at)}
-                    </span>
                   </div>
                 </div>
               </div>
-            </div>
+            {/each}
           {/each}
         </div>
+
+        <button 
+          class="carousel-btn carousel-btn-right" 
+          onclick={scrollCarouselRight}
+          aria-label="Scroll carousel right"
+        >
+          <IconChevronRight size={24} />
+        </button>
       </div>
     {:else}
       <div class="empty-state">
@@ -448,31 +439,75 @@
     width: 100%;
     overflow: hidden;
     position: relative;
-    mask-image: linear-gradient(
-      to right,
-      transparent,
-      black 10%,
-      black 90%,
-      transparent
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(
+      135deg,
+      rgba(138, 56, 245, 0.8) 0%,
+      rgba(242, 56, 245, 0.7) 100%
     );
-    -webkit-mask-image: linear-gradient(
-      to right,
-      transparent,
-      black 10%,
-      black 90%,
-      transparent
+    border: 2px solid rgba(138, 56, 245, 0.6);
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    backdrop-filter: blur(8px);
+  }
+
+  .carousel-btn:hover {
+    background: linear-gradient(
+      135deg,
+      rgba(138, 56, 245, 1) 0%,
+      rgba(242, 56, 245, 0.9) 100%
     );
+    box-shadow: 0 8px 24px rgba(138, 56, 245, 0.4);
+    transform: translateY(-50%) scale(1.1);
+    border-color: rgba(242, 56, 245, 0.8);
+  }
+
+  .carousel-btn:active {
+    transform: translateY(-50%) scale(0.95);
+  }
+
+  .carousel-btn-left {
+    left: 0;
+  }
+
+  .carousel-btn-right {
+    right: 0;
   }
 
   .carousel-track {
     display: flex;
     gap: 1.5rem;
-    animation: scroll 120s linear infinite;
     width: fit-content;
     padding: 2rem 0;
+    --manual-offset: 0px;
+    transform: translateX(var(--manual-offset));
+    animation-name: scroll;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-composition: add;
   }
 
-  .carousel-wrapper:hover .carousel-track,
+  .carousel-wrapper:has(.pull-card:hover) .carousel-track {
+    animation-play-state: paused;
+  }
+
   .carousel-wrapper.paused .carousel-track {
     animation-play-state: paused;
   }
@@ -482,14 +517,18 @@
       transform: translateX(0);
     }
     100% {
-      transform: translateX(-50%);
+      transform: translateX(-12.5%);
     }
   }
 
   @media (max-width: 768px) {
     .carousel-track {
       gap: 1rem;
-      animation: scroll 80s linear infinite;
+    }
+
+    .carousel-btn {
+      width: 40px;
+      height: 40px;
     }
   }
 

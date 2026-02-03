@@ -208,7 +208,7 @@ export const load: PageServerLoad = async () => {
     `
     )
     .order("created_at", { ascending: false })
-    .limit(20);
+    .limit(50);
 
   // Fetch 10 mythic cards
   const { data: mythicInventoryData, error: mythicError } = await adminClient
@@ -228,7 +228,7 @@ export const load: PageServerLoad = async () => {
     )
     .eq("rarity", "mythic")
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(25);
 
   // Fetch 10 rare cards
   const { data: rareRarityInventoryData, error: rareRarityError } = await adminClient
@@ -248,7 +248,7 @@ export const load: PageServerLoad = async () => {
     )
     .eq("rarity", "rare")
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(25);
 
   if (recentError || mythicError || rareRarityError) {
     console.error("Error fetching pulls:", recentError || mythicError || rareRarityError);

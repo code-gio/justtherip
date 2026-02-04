@@ -28,6 +28,11 @@
     image_uri?: any;
   }
 
+  interface CardEntry {
+    name: string;
+    collector_number?: string;
+  }
+
   interface VerificationResult {
     found: Card[];
     notFound: string[];
@@ -50,33 +55,79 @@
   let showExamples = $state(false);
   let showResults = $state(false);
 
-  function parseCardNames(input: string): string[] {
-    return input
-      .split("\n")
-      .map((line: string) => {
-        let cleaned = line.trim();
+  const COLLECTOR_NUMBER_PATTERN = /^[\da-z]+$/i;
 
-        // Remove quantity prefix (e.g., "2x ", "10x ")
-        cleaned = cleaned.replace(/^\d+x?\s+/i, "");
+  function looksLikeCollectorNumber(s: string): boolean {
+    const t = s.replace(/^["']|["']$/g, "").replace(/[()]/g, "").trim();
+    return t.length > 0 && t.length <= 10 && COLLECTOR_NUMBER_PATTERN.test(t);
+  }
 
-        // Remove parentheses and their content (e.g., "(cmm)", "(Finisher)")
-        cleaned = cleaned.replace(/\([^)]*\)/g, "");
+  const TRAILING_COLLECTOR_NUMBER = /\s*[^\w()]+\s*([\da-z]+)\s*$/i;
 
-        // Remove square brackets and their content (e.g., "[Removal]", "[Sideboard]")
-        cleaned = cleaned.replace(/\[[^\]]*\]/g, "");
+  function parseCardEntries(input: string): CardEntry[] {
+    const entries: CardEntry[] = [];
+    const lines = input.split(/\r?\n/);
+    for (const line of lines) {
+      let trimmedLine = line.trim();
+      trimmedLine = trimmedLine.replace(/\uFF0C/g, ",").replace(/;/g, ",");
+      if (!trimmedLine.length) continue;
 
-        // Remove hash/hashtag prefix (e.g., "# Sideboard")
-        cleaned = cleaned.replace(/^#\s*/g, "");
+      let namePart: string;
+      let collectorNumber: string | undefined;
+      const hasTab = trimmedLine.includes("\t");
+      const hasComma = trimmedLine.includes(",");
 
-        // Remove special markers like "^To Remove" or "^FF0000^"
-        cleaned = cleaned.replace(/\^[^\s]*\^?/g, "");
+      if (hasTab) {
+        const tabParts = trimmedLine.split("\t").map((p) => p.trim());
+        namePart = tabParts[0] ?? "";
+        collectorNumber = tabParts[1]?.length ? tabParts[1] : undefined;
+        if (!collectorNumber && namePart.includes(",")) {
+          const commaParts = namePart.split(",").map((p) => p.trim());
+          if (commaParts.length >= 2 && looksLikeCollectorNumber(commaParts[commaParts.length - 1] ?? "")) {
+            collectorNumber = (commaParts[commaParts.length - 1] ?? "").replace(/^["']|["']$/g, "").trim();
+            namePart = commaParts.slice(0, -1).join(",").trim();
+          }
+        } else if (collectorNumber) {
+          collectorNumber = collectorNumber.replace(/^["']|["']$/g, "").trim() || undefined;
+        }
+      } else if (hasComma) {
+        const parts = trimmedLine.split(",").map((p) => p.trim());
+        if (parts.length >= 2 && looksLikeCollectorNumber(parts[parts.length - 1] ?? "")) {
+          collectorNumber = (parts[parts.length - 1] ?? "").replace(/^["']|["']$/g, "").trim();
+          namePart = parts.slice(0, -1).join(",").trim();
+        } else {
+          namePart = trimmedLine;
+        }
+      } else {
+        namePart = trimmedLine;
+      }
 
-        // Clean up extra whitespace
-        cleaned = cleaned.replace(/\s+/g, " ").trim();
+      let cleaned = namePart.replace(/^["']|["']$/g, "").trim();
+      cleaned = cleaned.replace(/,\s*$/, "").trim();
 
-        return cleaned;
-      })
-      .filter((line: string) => line.length > 0);
+      if (!collectorNumber) {
+        const match = cleaned.match(TRAILING_COLLECTOR_NUMBER);
+        if (match && looksLikeCollectorNumber(match[1])) {
+          collectorNumber = match[1].trim();
+          cleaned = cleaned.slice(0, match.index).trim().replace(/^["']|["']$/g, "");
+        }
+      }
+
+      cleaned = cleaned.replace(/^\d+x?\s+/i, "");
+      cleaned = cleaned.replace(/\([^)]*\)/g, "");
+      cleaned = cleaned.replace(/\[[^\]]*\]/g, "");
+      cleaned = cleaned.replace(/^#\s*/g, "");
+      cleaned = cleaned.replace(/\^[^\s]*\^?/g, "");
+      cleaned = cleaned.replace(/\s+/g, " ").trim();
+
+      if (!cleaned.length) continue;
+
+      if (collectorNumber !== undefined) {
+        collectorNumber = collectorNumber.replace(/^["']|["']$/g, "").trim() || undefined;
+      }
+      entries.push({ name: cleaned, collector_number: collectorNumber });
+    }
+    return entries;
   }
 
   function handleFileSelect(event: Event) {
@@ -109,9 +160,9 @@
       return;
     }
 
-    const cardNamesArray = parseCardNames(textInput);
+    const cardEntries = parseCardEntries(textInput);
 
-    if (cardNamesArray.length === 0) {
+    if (cardEntries.length === 0) {
       toast.error("No valid card names found");
       return;
     }
@@ -127,7 +178,7 @@
         },
         body: JSON.stringify({
           game_code: gameCode,
-          card_names: cardNamesArray.join("\n"),
+          card_entries: cardEntries,
         }),
       });
 
@@ -287,13 +338,13 @@
           </Button>
           {#if showExamples}
             <div class="border rounded-lg p-4 bg-muted/50 space-y-2 text-sm">
-              <p class="font-medium">Enter card names, one per line:</p>
+              <p class="font-medium">One per line. Optional second column = collector number (CSV/tab):</p>
               <div
                 class="bg-background rounded p-3 font-mono text-xs space-y-1"
               >
                 <div>Sensei's Divining Top</div>
-                <div>Sol Ring</div>
-                <div>Path to Exile</div>
+                <div>Sol Ring, 123</div>
+                <div>Path to Exile, 456</div>
                 <div>Wrath of God</div>
                 <div>Island</div>
                 <div>Forest</div>

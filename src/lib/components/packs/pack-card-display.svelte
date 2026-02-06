@@ -54,7 +54,7 @@
         <img
           src={pack.image}
           alt={pack.name}
-          class="pack-image"
+          class="pack-image "
           loading="lazy"
         />
       {:else}
@@ -68,9 +68,9 @@
     <!-- Pack Info -->
     <div class="pack-info">
       {#if pack.game_code === "mtg"}
-        <img src="/landing/packs/Magic-The-Gathering.svg" alt="Magic: The Gathering" class="game-logo magic-logo" />
+        <img src="/landing/packs/Magic-The-Gathering.svg" alt="Magic: The Gathering" class="game-logo magic-logo mt-7" />
       {:else if pack.game_code === "pokemon"}
-        <img src="/landing/packs/PoKéMoN.svg" alt="Pokémon" class="game-logo pokemon-logo" />
+        <img src="/landing/packs/PoKéMoN.svg" alt="Pokémon" class="game-logo pokemon-logo mt-7" />
       {:else}
         <IconCards size={32} class="game-icon" />
       {/if}

@@ -87,8 +87,8 @@
   }
 
   .card-image {
-    width: 6rem;
-    height: 10rem;
+    width: 11rem;
+    height: 15rem;
     object-fit: cover;
     border-radius: 0.75rem;
     box-shadow: 
@@ -108,8 +108,8 @@
   }
 
   .card-placeholder {
-    width: 9rem;
-    height: 23rem;
+    width: 7rem;
+    height: 9.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -138,12 +138,44 @@
   @media (min-width: 640px) {
     .card-image,
     .card-placeholder {
+      width: 9rem;
+      height: 13rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .card-image,
+    .card-placeholder {
+      width: 10rem;
+      height: 14.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .card-image,
+    .card-placeholder {
+      width: 10.5rem;
+      height: 15.5rem;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .card-image,
+    .card-placeholder {
       width: 10rem;
       height: 14rem;
     }
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 1400px) {
+    .card-image,
+    .card-placeholder {
+      width: 10.5rem;
+      height: 15rem;
+    }
+  }
+
+  @media (min-width: 1660px) {
     .card-image,
     .card-placeholder {
       width: 12rem;

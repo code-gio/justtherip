@@ -19,7 +19,7 @@
       <Sidebar.MenuItem>
         <Sidebar.MenuButton class="data-[slot=sidebar-menu-button]:!p-1.5">
           {#snippet child({ props })}
-            <a href="##" {...props}>
+            <a href="/" {...props}>
               <IconCards class="!size-5" />
               <span class="text-base font-semibold">Just the Rip</span>
             </a>

@@ -264,11 +264,11 @@ export const load: PageServerLoad = async ({ locals }) => {
   const recentActivity: any[] = [];
   
   // Add recent pack openings
-  packOpenings.slice(0, 5).forEach((po: any) => {
+  packOpenings.slice(0, 5).forEach((po: any, packIndex: number) => {
     const cards = Array.isArray(po.cards_pulled)
       ? po.cards_pulled
       : [po.cards_pulled];
-    cards.forEach((card: any) => {
+    cards.forEach((card: any, cardIndex: number) => {
       const date = new Date(po.created_at);
       const hoursAgo = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60));
       const timeAgo =
@@ -279,7 +279,7 @@ export const load: PageServerLoad = async ({ locals }) => {
             : `${Math.floor(hoursAgo / 24)} day${Math.floor(hoursAgo / 24) > 1 ? "s" : ""} ago`;
 
       recentActivity.push({
-        id: `pack-${po.id}-${card.card_uuid || Math.random()}`,
+        id: `pack-${po.id ?? packIndex}-${cardIndex}-${card.card_uuid ?? `${packIndex}-${cardIndex}`}`,
         type: "pack_open",
         description: `Opened pack and pulled ${card.card_name || "a card"}`,
         timestamp: timeAgo,

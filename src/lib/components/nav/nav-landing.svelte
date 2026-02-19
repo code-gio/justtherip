@@ -11,7 +11,7 @@
   <div class="nav-container">
     <!-- Logo -->
     <a href="/" class="nav-logo">
-      <img src="/landing/logo.svg" alt="Just The Rip" class="logo-image" />
+      <img src="/logo.svg" alt="Just The Rip" class="logo-image" />
     </a>
 
     <!-- Desktop Navigation Links -->

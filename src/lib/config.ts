@@ -23,7 +23,7 @@ export const siteConfig = {
   title: "justtherip.gg",
   description: "Jewels-Only Pack Opening Platform",
   logo: "/logo.svg",
-  logoDark: "/logo-white.svg",
+  logoDark: "/logo.svg",
   favicon: "/favicon.png",
   ripToUsd: 1.0,
 };

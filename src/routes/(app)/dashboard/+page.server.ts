@@ -208,9 +208,8 @@ export const load: PageServerLoad = async ({ locals }) => {
   // ROI and Performance Metrics
   const totalValuePulledCents = totalValuePulled;
   const totalRipsSpentCents = totalRipsSpent * 100; // Convert Rips to cents (1 Rip = $1 = 100 cents)
-  const netProfitLoss = totalValuePulledCents - totalRipsSpentCents;
   const roiPercentage = totalRipsSpent > 0 
-    ? ((netProfitLoss / totalRipsSpentCents) * 100) 
+    ? (((totalValuePulledCents - totalRipsSpentCents) / totalRipsSpentCents) * 100) 
     : 0;
   
   const averagePackValue = totalPacksOpened > 0
@@ -325,6 +324,13 @@ export const load: PageServerLoad = async ({ locals }) => {
   });
 
   return {
+    user: {
+      name:
+        user?.user_metadata?.full_name ??
+        user?.user_metadata?.name ??
+        user?.user_metadata?.display_name ??
+        "there",
+    },
     stats: {
       // Basic stats
       packsOpened: totalPacksOpened,
@@ -346,7 +352,6 @@ export const load: PageServerLoad = async ({ locals }) => {
       
       // ROI & Performance
       totalValuePulled: totalValuePulledCents,
-      netProfitLoss,
       roiPercentage,
       averagePackValue,
       averageCardValue,

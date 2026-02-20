@@ -1,7 +1,6 @@
 import { redirect, error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
-import { adminClient } from "$lib/server/rips";
-import { getUserRipBalance } from "$lib/server/rips";
+import { adminClient, getSystemConfig, getUserRipBalance } from "$lib/server/rips";
 import { calculatePackCardProbabilities } from "$lib/server/card-draw";
 
 /**
@@ -51,8 +50,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
   const packId = params.packId;
 
-  // Fetch pack data and balance in parallel
-  const [packResult, balance] = await Promise.all([
+  // Fetch pack data, balance, and sellback rate in parallel
+  const [packResult, balance, sellbackRateRaw] = await Promise.all([
     adminClient
       .from("packs")
       .select("*")
@@ -60,7 +59,13 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       .eq("is_active", true)
       .single(),
     getUserRipBalance(user.id),
+    getSystemConfig("sellback_rate"),
   ]);
+
+  const sellbackRate =
+    sellbackRateRaw != null && Number.isFinite(Number(sellbackRateRaw))
+      ? Number(sellbackRateRaw)
+      : 85;
 
   if (packResult.error || !packResult.data) {
     throw error(404, "Pack not found");
@@ -181,5 +186,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       totalCards: allCards.length,
     },
     balance: balance || 0,
+    sellbackRate,
   };
 };

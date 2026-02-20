@@ -212,6 +212,7 @@
       bind:isOpening
       card={pulledCard}
       cardPool={pack.cards || []}
+      sellbackRate={data.sellbackRate ?? 85}
       onOpenAnother={openPack}
       onSell={sellCard}
       onShip={openShipDialog}

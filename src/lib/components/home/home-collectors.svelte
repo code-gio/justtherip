@@ -23,12 +23,20 @@
     profiles: Profile | null;
   }
 
+  interface Game {
+    id: string;
+    name: string;
+    code: string;
+  }
+
   let { 
     recentPulls = [], 
-    rarePulls = [] 
+    rarePulls = [],
+    games = [],
   }: { 
     recentPulls?: RecentPull[]; 
     rarePulls?: RecentPull[];
+    games?: Game[];
   } = $props();
 
   let selectedCard: RecentPull | null = $state(null);
@@ -36,11 +44,17 @@
   let zoomPosition = $state({ x: 0, y: 0 });
   let showZoom = $state(false);
   let activeTab = $state<"recent" | "rare">("recent");
+  let selectedGameCode = $state<string>("all");
   let carouselTrack: HTMLElement | null = $state(null);
   let animationDuration = $state(120);
   let manualOffset = $state(0);
 
-  let displayedPulls = $derived(activeTab === "recent" ? recentPulls : rarePulls);
+  let basePulls = $derived(activeTab === "recent" ? recentPulls : rarePulls);
+  let displayedPulls = $derived(
+    selectedGameCode === "all"
+      ? basePulls
+      : basePulls.filter((p) => (p.game_code || "") === selectedGameCode)
+  );
 
   const CARD_WIDTH = 240;
   const CARD_GAP = 24;
@@ -94,25 +108,25 @@
   }
 
   function scrollCarouselLeft() {
-    if (carouselTrack) {
+    const el = carouselTrack;
+    if (el) {
       manualOffset = manualOffset + SCROLL_STEP;
-      carouselTrack.style.setProperty('--manual-offset', `${manualOffset}px`);
-      carouselTrack.style.transition = 'transform 0.6s ease-in-out';
-      
+      el.style.setProperty('--manual-offset', `${manualOffset}px`);
+      el.style.transition = 'transform 0.6s ease-in-out';
       setTimeout(() => {
-        carouselTrack.style.transition = '';
+        el.style.transition = '';
       }, 600);
     }
   }
 
   function scrollCarouselRight() {
-    if (carouselTrack) {
+    const el = carouselTrack;
+    if (el) {
       manualOffset = manualOffset - SCROLL_STEP;
-      carouselTrack.style.setProperty('--manual-offset', `${manualOffset}px`);
-      carouselTrack.style.transition = 'transform 0.6s ease-in-out';
-      
+      el.style.setProperty('--manual-offset', `${manualOffset}px`);
+      el.style.transition = 'transform 0.6s ease-in-out';
       setTimeout(() => {
-        carouselTrack.style.transition = '';
+        el.style.transition = '';
       }, 600);
     }
   }
@@ -125,18 +139,36 @@
       <h2 class="collectors-title">Top Community Pulls</h2>
     </div>
 
-    <Tabs.Root bind:value={activeTab} class="tabs-container">
-      <Tabs.List class="tabs-list">
-        <Tabs.Trigger value="recent" class="tab-trigger">
-          <IconClock size={16} />
-          Most Recent
-        </Tabs.Trigger>
-        <Tabs.Trigger value="rare" class="tab-trigger">
-          <IconSparkles size={16} />
-          Top Rares
-        </Tabs.Trigger>
-      </Tabs.List>
-    </Tabs.Root>
+    <div class="filters-row">
+      <Tabs.Root bind:value={activeTab} class="tabs-container">
+        <Tabs.List class="tabs-list">
+          <Tabs.Trigger value="recent" class="tab-trigger">
+            <IconClock size={16} />
+            Most Recent
+          </Tabs.Trigger>
+          <Tabs.Trigger value="rare" class="tab-trigger">
+            <IconSparkles size={16} />
+            Top Rares
+          </Tabs.Trigger>
+        </Tabs.List>
+      </Tabs.Root>
+
+      {#if games.length > 0}
+        <div class="game-filter">
+          <label for="collectors-game-select" class="game-filter-label">Game</label>
+          <select
+            id="collectors-game-select"
+            bind:value={selectedGameCode}
+            class="game-select"
+          >
+            <option value="all">All</option>
+            {#each games as game (game.id)}
+              <option value={game.code}>{game.name}</option>
+            {/each}
+          </select>
+        </div>
+      {/if}
+    </div>
 
     {#if displayedPulls.length > 0}
       <div class="carousel-wrapper" class:paused={isDialogOpen}>
@@ -350,10 +382,52 @@
     margin-bottom: 2rem;
   }
 
+  .filters-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem 1.5rem;
+    margin-bottom: 2rem;
+  }
+
   .tabs-container {
     display: flex;
     justify-content: center;
-    margin-bottom: 2rem;
+  }
+
+  .game-filter {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .game-filter-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .game-select {
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(138, 56, 245, 0.3);
+    border-radius: 8px;
+    cursor: pointer;
+    min-width: 120px;
+  }
+
+  .game-select:hover {
+    border-color: rgba(138, 56, 245, 0.5);
+  }
+
+  .game-select:focus {
+    outline: none;
+    border-color: rgba(138, 56, 245, 0.6);
+    box-shadow: 0 0 0 2px rgba(138, 56, 245, 0.2);
   }
 
   :global(.tabs-list) {

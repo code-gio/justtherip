@@ -136,7 +136,7 @@
   </Form.Field>
 
   <Form.Button
-    class="w-full"
+    class="w-full text-white"
     disabled={isSubmitting || (emailSent && !canResend)}
     data-state={isSubmitting ? "submitting" : undefined}
   >

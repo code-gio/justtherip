@@ -167,6 +167,7 @@
                         size="sm"
                         onclick={() => saveConfig(config.key)}
                         disabled={isLoading}
+                        class="text-white"
                       >
                         <IconCheck class="size-4 mr-1" />
                         Save

@@ -34,6 +34,7 @@
   let {
     card,
     cardPool = [],
+    sellbackRate = 85,
     isOpening = $bindable(false),
     onOpenAnother,
     onSell,
@@ -44,6 +45,7 @@
   }: {
     card: Card | null;
     cardPool?: CardPoolItem[];
+    sellbackRate?: number;
     isOpening?: boolean;
     onOpenAnother: () => void;
     onSell: (cardId: string) => Promise<void>;
@@ -635,8 +637,7 @@
             <IconLoader2 size={18} class="mr-2 animate-spin" />
             Selling...
           {:else}
-            <IconCoin size={18} class="mr-2" />
-            Sell Card
+            Sell for {(Math.floor(((card.value_cents ?? 0) * sellbackRate) / 100) / 100).toFixed(2)} Rips
           {/if}
         </Button>
         <Button
@@ -655,7 +656,7 @@
         </Button>
         <Button size="lg" onclick={onOpenAnother} disabled={isSelling || isShipping} class="text-white">
           <IconSparkles size={18} class="mr-2" />
-          Open Another
+          Keep Ripping
         </Button>
       </div>
     </div>

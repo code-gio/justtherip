@@ -16,7 +16,21 @@ export const load: PageServerLoad = async () => {
     };
   }
 
+  const list = configs || [];
+  if (!list.some((c: { key: string }) => c.key === "carousel_min_value_usd")) {
+    list.push({
+      key: "carousel_min_value_usd",
+      value: 0,
+      description:
+        "Minimum card value in USD to show in the home carousel. 0 = show all.",
+      updated_at: new Date().toISOString(),
+    });
+    list.sort((a: { key: string }, b: { key: string }) =>
+      a.key.localeCompare(b.key)
+    );
+  }
+
   return {
-    configs: configs || [],
+    configs: list,
   };
 };

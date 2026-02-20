@@ -129,7 +129,7 @@
     />
   </Form.Field>
 
-  <Form.Button disabled={isSubmitting} class="w-full">
+  <Form.Button disabled={isSubmitting} class="w-full text-white">
     {#if isSubmitting}
       Signing in...
     {:else}

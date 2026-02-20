@@ -21,8 +21,11 @@
     isLoading?: boolean;
   } = $props();
 
+  const PAGE_SIZE = 10;
+
   type FilterType = "all" | "purchase" | "pack_open";
   let activeFilter = $state<FilterType>("all");
+  let currentPage = $state(1);
 
   function formatTransactionType(
     transaction: Transaction
@@ -107,7 +110,31 @@
       : transactions.filter((tx) => tx.type === activeFilter)
   );
 
-  let groupedTransactions = $derived(groupByDate(filteredTransactions));
+  let totalPages = $derived(
+    Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE))
+  );
+
+  let paginatedTransactions = $derived(
+    filteredTransactions.slice(
+      (currentPage - 1) * PAGE_SIZE,
+      currentPage * PAGE_SIZE
+    )
+  );
+
+  let groupedTransactions = $derived(groupByDate(paginatedTransactions));
+
+  $effect(() => {
+    if (currentPage > totalPages) currentPage = totalPages;
+  });
+
+  $effect(() => {
+    activeFilter;
+    currentPage = 1;
+  });
+
+  function goToPage(page: number) {
+    currentPage = Math.max(1, Math.min(page, totalPages));
+  }
 </script>
 
 <div>
@@ -290,5 +317,36 @@
         </div>
       {/each}
     </div>
+
+    {#if totalPages > 1}
+      <div
+        class="mt-6 flex flex-wrap items-center justify-center gap-2 sm:justify-between"
+      >
+        <p class="text-sm text-muted-foreground">
+          Page {currentPage} of {totalPages}
+          <span class="ml-1">
+            ({filteredTransactions.length} transaction{filteredTransactions.length === 1 ? '' : 's'})
+          </span>
+        </p>
+        <div class="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={currentPage <= 1}
+            onclick={() => goToPage(currentPage - 1)}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={currentPage >= totalPages}
+            onclick={() => goToPage(currentPage + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+    {/if}
   {/if}
 </div>

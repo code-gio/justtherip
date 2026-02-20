@@ -54,7 +54,11 @@
   <div class="hero-section-bg">
     <div class="purple-vector">
       <HomeHero />
-      <HomeCollectors recentPulls={data.recentPulls} rarePulls={data.rarePulls} />
+      <HomeCollectors
+      recentPulls={data.recentPulls}
+      rarePulls={data.rarePulls}
+      games={(data.games ?? []) as { id: string; name: string; code: string }[]}
+    />
     </div>
     <HomePacks packs={data.topPacks} />
     <!-- Three Steps Section -->

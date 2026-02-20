@@ -40,6 +40,23 @@ function extractCardImageUrl(imageUri: any): string | null {
 }
 
 export const load: PageServerLoad = async () => {
+  // Carousel minimum value: only show cards >= this USD value (e.g. 20 = $20+)
+  const { data: carouselMinConfig } = await adminClient
+    .from("system_config")
+    .select("value")
+    .eq("key", "carousel_min_value_usd")
+    .single();
+  const carouselMinValueUsd = Number(carouselMinConfig?.value);
+  const carouselMinCents = Number.isFinite(carouselMinValueUsd) && carouselMinValueUsd >= 0
+    ? carouselMinValueUsd * 100
+    : 0;
+
+  const { data: gamesData } = await adminClient
+    .from("games")
+    .select("id, name, code")
+    .order("name");
+  const games = gamesData || [];
+
   // Get the 4 most opened packs based on pack_openings count
   const { data: packOpeningsCount, error: openingsError } = await adminClient
     .from("pack_openings")
@@ -256,6 +273,8 @@ export const load: PageServerLoad = async () => {
       topPacks: topPacksWithCards || [],
       recentPulls: [],
       rarePulls: [],
+      packsByGame: packsByCode,
+      games,
     };
   }
 
@@ -276,6 +295,8 @@ export const load: PageServerLoad = async () => {
       topPacks: topPacksWithCards || [],
       recentPulls: [],
       rarePulls: [],
+      packsByGame: packsByCode,
+      games,
     };
   }
 
@@ -302,23 +323,27 @@ export const load: PageServerLoad = async () => {
     processedProfiles.map((profile) => [profile.id, profile])
   );
 
-  // Combine the data for recent pulls (20 cards)
-  const recentPulls = (recentInventoryData || []).map((item) => ({
-    ...item,
-    profiles: profilesMap.get(item.user_id) || null,
-  }));
+  // Combine the data for recent pulls and filter by carousel minimum value
+  const recentPulls = (recentInventoryData || [])
+    .filter((item) => (item.card_value_cents ?? 0) >= carouselMinCents)
+    .map((item) => ({
+      ...item,
+      profiles: profilesMap.get(item.user_id) || null,
+    }));
 
-  // Combine the data for rare pulls (10 mythic + 10 rare = 20 cards)
-  const rarePulls = rareInventoryData.map((item) => ({
-    ...item,
-    profiles: profilesMap.get(item.user_id) || null,
-  }));
-
+  // Combine the data for rare pulls and filter by carousel minimum value
+  const rarePulls = rareInventoryData
+    .filter((item) => (item.card_value_cents ?? 0) >= carouselMinCents)
+    .map((item) => ({
+      ...item,
+      profiles: profilesMap.get(item.user_id) || null,
+    }));
 
   return {
     topPacks: topPacksWithCards || [],
     recentPulls,
     rarePulls,
     packsByGame: packsByCode,
+    games,
   };
 };

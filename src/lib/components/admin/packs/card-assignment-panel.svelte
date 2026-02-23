@@ -81,6 +81,7 @@
   let currentPage = $state(1);
   let hasMore = $state(false);
   let totalCards = $state(0);
+  let catalogUnavailable = $state(false);
   let searchTimeout: ReturnType<typeof setTimeout> | null = null;
   let selectedCardImage = $state<string | null>(null);
   let imageDialogOpen = $state(false);
@@ -178,6 +179,7 @@
 
       if (reset) {
         cards = result.cards || [];
+        catalogUnavailable = result.catalogUnavailable === true;
       } else {
         cards = [...cards, ...(result.cards || [])];
       }
@@ -328,9 +330,14 @@
           </div>
         {:else if cards.length === 0}
           <div class="border rounded-lg p-8 text-center text-muted-foreground">
-            <p class="text-sm">No cards found</p>
-            {#if gameCode === "mtg" && !searchQuery.trim()}
-              <p class="text-xs mt-2">Try searching for a specific card name</p>
+            {#if catalogUnavailable}
+              <p class="text-sm">Card catalog not available for this game yet.</p>
+              <p class="text-xs mt-2">The cards table for this game has not been created.</p>
+            {:else}
+              <p class="text-sm">No cards found</p>
+              {#if gameCode === "mtg" && !searchQuery.trim()}
+                <p class="text-xs mt-2">Try searching for a specific card name</p>
+              {/if}
             {/if}
           </div>
         {:else}

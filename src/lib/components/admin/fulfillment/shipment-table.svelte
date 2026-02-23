@@ -10,9 +10,10 @@
   interface Props {
     shipments: AdminShipment[];
     onUpdate: (shipment: AdminShipment) => void;
+    onViewPurchaseOptions: (shipment: AdminShipment) => void;
   }
 
-  let { shipments, onUpdate }: Props = $props();
+  let { shipments, onUpdate, onViewPurchaseOptions }: Props = $props();
 
   const columnHelper = createColumnHelper<AdminShipment>();
 
@@ -152,6 +153,7 @@
       cell: (info) => renderComponent(ShipmentActionsCell, {
         shipment: info.row.original,
         onUpdate,
+        onViewPurchaseOptions,
       }),
     }),
   ];

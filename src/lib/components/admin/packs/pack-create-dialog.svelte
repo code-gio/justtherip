@@ -95,6 +95,8 @@
 
       const result = await response.json();
 
+      console.log("Result:", result);
+
       // Handle both success and failure cases
       if (result.type === "success") {
         // Parse data if it's a string

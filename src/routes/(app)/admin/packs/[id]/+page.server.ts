@@ -62,7 +62,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
           .in("id", cardUuids);
 
         if (cardsError) {
-          console.error(`Error fetching cards from ${table}:`, cardsError);
+          if (cardsError.code !== "PGRST205") {
+            console.error(`Error fetching cards from ${table}:`, cardsError);
+          }
         } else if (cards) {
           cards.forEach((card: any) => {
             // Ensure image_uri is properly parsed if it's a JSONB string
@@ -76,8 +78,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
             cardDataMap.set(card.id, card);
           });
         }
-      } catch (error) {
-        console.error(`Error fetching cards from ${table}:`, error);
+      } catch (err: any) {
+        if (err?.code !== "PGRST205") {
+          console.error(`Error fetching cards from ${table}:`, err);
+        }
       }
     }
   }

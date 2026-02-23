@@ -1,12 +1,35 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { goto, invalidateAll } from "$app/navigation";
+  import { deserialize } from "$app/forms";
   import { Button } from "$lib/components/ui/button";
   import * as Card from "$lib/components/ui/card/index.js";
-  import { IconPlus } from "@tabler/icons-svelte";
+  import { IconPlus, IconTrash } from "@tabler/icons-svelte";
   import PackCreateDialog from "$lib/components/admin/packs/pack-create-dialog.svelte";
   import PackListHeader from "$lib/components/admin/packs/pack-list-header.svelte";
   import PackCardItem from "$lib/components/admin/packs/pack-card-item.svelte";
   import type { PageData } from "./$types";
+  import { toast } from "svelte-sonner";
+  import * as Dialog from "$lib/components/ui/dialog/index.js";
+
+
+  interface Pack {
+    id: string;
+    name: string;
+    description: string | null;
+    is_active: boolean;
+    slug: string;
+    game_code: string;
+    game: {
+      name: string;
+      code: string;
+    } | null;
+    rip_cost: number;
+    total_openings: number;
+    cards_per_pack: number;
+    image_url: string | null;
+    created_at: string;
+    updated_at: string;
+  }
 
   /**
    * Admin Pack Management — `/admin/packs`
@@ -30,6 +53,10 @@
 
   let { data }: { data: PageData } = $props();
   let showCreateDialog = $state(false);
+  let deleteDialogOpen = $state(false);
+  let packToDelete = $state<Pack | null>(null);
+  let isDeleting = $state(false);
+  let togglingPackId = $state<string | null>(null);
 
   function handleCreatePack() {
     showCreateDialog = true;
@@ -44,14 +71,94 @@
     goto(`/admin/packs/${packId}`);
   }
 
-  function handleDuplicatePack(packId: string) {
-    // TODO: Implement duplicate functionality
-    console.log("Duplicate pack:", packId);
+  async function handleDuplicatePack(pack: Pack) {
+    const toastId = toast.loading(`Duplicating "${pack.name}"...`);
+    const formData = new FormData();
+    formData.append("name", pack.name + " (copy)");
+    formData.append("slug", pack.slug + "-copy");
+    formData.append("game_code", pack.game_code);
+
+    try {
+      const response = await fetch("?/create", {
+        method: "POST",
+        body: formData,
+      });
+      const result = deserialize(await response.text());
+      toast.dismiss(toastId);
+      if (result.type === "success" && result.data?.packId) {
+        toast.success("Pack duplicated successfully");
+        await invalidateAll();
+      } else {
+        const err = result.type === "failure" && result.data?.error
+          ? String(result.data.error)
+          : "Failed to duplicate pack";
+        toast.error(err);
+      }
+    } catch (e) {
+      toast.dismiss(toastId);
+      toast.error("Failed to duplicate pack");
+    }
   }
 
-  async function handleToggleActive(packId: string) {
-    // TODO: Implement toggle active functionality
-    console.log("Toggle active:", packId);
+  async function handleToggleActive(packId: string, is_active: boolean) {
+    togglingPackId = packId;
+    try {
+      const formData = new FormData();
+      formData.append("id", packId);
+      formData.append("is_active", String(is_active));
+      const response = await fetch("?/toggleActive", {
+        method: "POST",
+        body: formData,
+      });
+      const result = deserialize(await response.text());
+      if (result.type === "success") {
+        toast.success("Pack status updated");
+        await invalidateAll();
+      } else {
+        const err = result.type === "failure" && result.data?.error
+          ? String(result.data.error)
+          : "Failed to update pack status";
+        toast.error(err);
+      }
+    } catch {
+      toast.error("Failed to update pack status");
+    } finally {
+      togglingPackId = null;
+    }
+  }
+
+  function openDeleteDialog(pack: Pack) {
+    deleteDialogOpen = true;
+    packToDelete = pack;
+  }
+
+  async function handleDeletePack() {
+    if (!packToDelete?.id) return;
+    isDeleting = true;
+    try {
+      const formData = new FormData();
+      formData.append("id", packToDelete.id);
+      const response = await fetch("?/delete", {
+        method: "POST",
+        body: formData,
+      });
+      const result = deserialize(await response.text());
+      if (result.type === "success") {
+        toast.success("Pack deleted successfully");
+        deleteDialogOpen = false;
+        packToDelete = null;
+        await invalidateAll();
+      } else {
+        const err = result.type === "failure" && result.data?.error
+          ? String(result.data.error)
+          : "Failed to delete pack";
+        toast.error(err);
+      }
+    } catch {
+      toast.error("Failed to delete pack");
+    } finally {
+      isDeleting = false;
+    }
   }
 </script>
 
@@ -72,10 +179,12 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each data.packs as pack (pack.id)}
         <PackCardItem
-          pack={pack}
+          {pack}
+          togglingPackId={togglingPackId}
           onEdit={handleEditPack}
-          onDuplicate={handleDuplicatePack}
+          onDuplicate={() => handleDuplicatePack(pack as Pack)}
           onToggleActive={handleToggleActive}
+          onDelete={() => openDeleteDialog(pack as Pack)}
         />
       {/each}
     </div>
@@ -87,3 +196,30 @@
   games={data.games}
   onComplete={handlePackCreated}
 />
+
+
+<Dialog.Root bind:open={deleteDialogOpen}>
+  <Dialog.Content class="max-w-4xl">
+    <Dialog.Header>
+      <Dialog.Title class="mt-4">Are you sure you want to delete this pack: {packToDelete?.name}?</Dialog.Title>
+    </Dialog.Header>
+    <Dialog.Description class="mt-4">This action cannot be undone.</Dialog.Description>
+    <Dialog.Footer>
+      <Button
+        variant="outline"
+        disabled={isDeleting}
+        onclick={() => { deleteDialogOpen = false; packToDelete = null; }}
+      >
+        Cancel
+      </Button>
+      <Button
+        variant="destructive"
+        disabled={isDeleting}
+        onclick={handleDeletePack}
+      >
+        {isDeleting ? "Deleting..." : "Delete"}
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
+

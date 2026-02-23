@@ -46,9 +46,18 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
     // Build base query - fetch shipments first, then profiles separately
     // Supabase foreign key join syntax can be tricky, so we'll do it in two steps
+    // let query = adminClient
+    //   .from("shipments")
+    //   .select("*", { count: "exact" });
+
     let query = adminClient
       .from("shipments")
-      .select("*", { count: "exact" });
+      .select(`
+        *,
+        user_inventory!shipments_inventory_card_id_fkey (*)
+      `, { count: "exact" })
+      .order("requested_at", { ascending: false });
+
 
     // Apply filters
     if (statusFilter && statusFilter !== "all") {
@@ -95,13 +104,13 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     // Fetch profiles for all unique user IDs
     const userIds = [...new Set((shipments || []).map((s: any) => s.user_id))];
     const profilesMap = new Map<string, any>();
-    
+
     if (userIds.length > 0) {
       const { data: profiles } = await adminClient
         .from("profiles")
         .select("id, email, username, display_name")
         .in("id", userIds);
-      
+
       (profiles || []).forEach((profile: any) => {
         profilesMap.set(profile.id, profile);
       });
@@ -134,20 +143,20 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         carrier: shipment.carrier,
         estimatedDelivery: shipment.estimated_delivery_date
           ? new Date(shipment.estimated_delivery_date).toLocaleDateString(
-              "en-US",
-              {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              }
-            )
-          : null,
-        deliveredDate: shipment.delivered_date
-          ? new Date(shipment.delivered_date).toLocaleDateString("en-US", {
+            "en-US",
+            {
               month: "short",
               day: "numeric",
               year: "numeric",
-            })
+            }
+          )
+          : null,
+        deliveredDate: shipment.delivered_date
+          ? new Date(shipment.delivered_date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
           : null,
         shippingAddress: shipment.shipping_address_full,
         shippingName: shipment.shipping_name,
@@ -157,6 +166,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         shippedAt: shipment.shipped_at || undefined,
         createdAt: shipment.created_at,
         updatedAt: shipment.updated_at,
+        inventory: shipment.user_inventory,
       };
     });
 

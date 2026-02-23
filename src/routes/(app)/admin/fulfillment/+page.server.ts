@@ -3,7 +3,7 @@ import { adminClient } from "$lib/server/rips";
 
 export const load: PageServerLoad = async ({ url }) => {
   // Admin check is handled by /admin/+layout.server.ts
-  
+
   const statusFilter = url.searchParams.get("status") || "all";
   const searchQuery = url.searchParams.get("search") || "";
   const page = parseInt(url.searchParams.get("page") || "1");
@@ -11,9 +11,16 @@ export const load: PageServerLoad = async ({ url }) => {
   const offset = (page - 1) * limit;
 
   // Build query - fetch shipments first
+  // let query = adminClient
+  //   .from("shipments")
+  //   .select("*", { count: "exact" })
+  //   .order("requested_at", { ascending: false });
   let query = adminClient
     .from("shipments")
-    .select("*", { count: "exact" })
+    .select(`
+    *,
+    user_inventory!shipments_inventory_card_id_fkey (*)
+  `, { count: "exact" })
     .order("requested_at", { ascending: false });
 
   // Apply filters
@@ -37,20 +44,34 @@ export const load: PageServerLoad = async ({ url }) => {
     };
   }
 
+  // const { data: inventory, error: inventoryError } = await adminClient
+  //   .from("user_inventory")
+  //   .select("*")
+  //   .eq("id", shipments[0]);
+
+  // if (inventoryError) {
+  //   console.error("Error fetching inventory:", inventoryError);
+  //   return {
+  //     inventory: [],
+  //   };
+  // }
+
   // Fetch profiles for all unique user IDs
   const userIds = [...new Set((shipments || []).map((s: any) => s.user_id))];
   const profilesMap = new Map<string, any>();
-  
+
   if (userIds.length > 0) {
     const { data: profiles } = await adminClient
       .from("profiles")
       .select("id, email, username, display_name")
       .in("id", userIds);
-    
+
     (profiles || []).forEach((profile: any) => {
       profilesMap.set(profile.id, profile);
     });
   }
+
+  // console.log("shipments", shipments);
 
   // Transform shipments
   const transformedShipments = (shipments || []).map((shipment: any) => {
@@ -76,17 +97,17 @@ export const load: PageServerLoad = async ({ url }) => {
       carrier: shipment.carrier,
       estimatedDelivery: shipment.estimated_delivery_date
         ? new Date(shipment.estimated_delivery_date).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
         : null,
       deliveredDate: shipment.delivered_date
         ? new Date(shipment.delivered_date).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
         : null,
       shippingAddress: shipment.shipping_address_full,
       shippingName: shipment.shipping_name,
@@ -96,6 +117,7 @@ export const load: PageServerLoad = async ({ url }) => {
       shippedAt: shipment.shipped_at || undefined,
       createdAt: shipment.created_at,
       updatedAt: shipment.updated_at,
+      inventory: shipment.user_inventory,
     };
   });
 
@@ -110,6 +132,7 @@ export const load: PageServerLoad = async ({ url }) => {
         s.userEmail?.toLowerCase().includes(queryLower)
     );
   }
+  // console.log("filteredShipments", filteredShipments);
 
   return {
     shipments: filteredShipments,

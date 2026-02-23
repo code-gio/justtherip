@@ -2,13 +2,21 @@
   import { Button } from "$lib/components/ui/button";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Badge } from "$lib/components/ui/badge";
-  import { IconEdit, IconCopy, IconEye, IconEyeOff } from "@tabler/icons-svelte";
+  import {
+    IconEdit,
+    IconCopy,
+    IconEye,
+    IconEyeOff,
+    IconTrash,
+  } from "@tabler/icons-svelte";
 
   interface Pack {
     id: string;
     name: string;
     description: string | null;
     is_active: boolean;
+    slug: string;
+    game_code: string;
     game: {
       name: string;
       code: string;
@@ -19,12 +27,16 @@
 
   interface Props {
     pack: Pack;
+    togglingPackId?: string | null;
     onEdit: (packId: string) => void;
-    onDuplicate: (packId: string) => void;
-    onToggleActive: (packId: string) => void;
+    onDuplicate: (pack: Pack) => any;
+    onToggleActive: (packId: string, is_active: boolean) => void;
+    onDelete: (pack: Pack) => any;
   }
 
-  let { pack, onEdit, onDuplicate, onToggleActive }: Props = $props();
+  let { pack, togglingPackId = null, onEdit, onDuplicate, onToggleActive, onDelete }: Props = $props();
+
+  const isToggling = $derived(togglingPackId === pack.id);
 </script>
 
 <Card.Root>
@@ -36,7 +48,10 @@
           {pack.description || "No description"}
         </Card.Description>
       </div>
-      <Badge variant={pack.is_active ? "default" : "secondary"}>
+      <Badge
+        variant={pack.is_active ? "default" : "secondary"}
+        class="text-white"
+      >
         {pack.is_active ? "Active" : "Inactive"}
       </Badge>
     </div>
@@ -69,9 +84,12 @@
       variant="outline"
       size="sm"
       class="flex-1"
-      onclick={() => onToggleActive(pack.id)}
+      disabled={isToggling}
+      onclick={() => onToggleActive(pack.id, pack.is_active)}
     >
-      {#if pack.is_active}
+      {#if isToggling}
+        <span class="animate-pulse">...</span>
+      {:else if pack.is_active}
         <IconEyeOff size={16} class="mr-1" />
         Deactivate
       {:else}
@@ -82,9 +100,12 @@
     <Button
       variant="outline"
       size="sm"
-      onclick={() => onDuplicate(pack.id)}
+      onclick={() => onDuplicate(pack as any)}
     >
       <IconCopy size={16} />
+    </Button>
+    <Button size="sm" variant="destructive" onclick={() => onDelete(pack as Pack)} class="cursor-pointer" >
+      <IconTrash size={16} />
     </Button>
   </Card.Footer>
 </Card.Root>

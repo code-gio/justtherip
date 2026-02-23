@@ -24,8 +24,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         game_code,
         rip_cost,
         is_active,
-        total_openings,
-        created_at
+        total_openings
       `)
       .order("created_at", { ascending: false }),
     adminClient
@@ -59,6 +58,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 export const actions = {
   create: async ({ request, locals }) => {
+    console.log("Create pack request received");
     const { session, user } = await locals.safeGetSession();
 
     if (!session || !user) {
@@ -105,5 +105,63 @@ export const actions = {
     }
 
     return { success: true, packId: pack.id };
+  },
+  delete: async ({ request, locals }) => {
+    const { session, user } = await locals.safeGetSession();
+    if (!session || !user) {
+      return fail(401, { success: false, error: "Unauthorized" });
+    }
+
+    // Check if user is admin
+    try {
+      await requireAdmin(user.id);
+    } catch (err) {
+      return fail(403, { success: false, error: "Forbidden: Admin access required" });
+    }
+
+    const formData = await request.formData();
+    const packId = formData.get("id") as string | null;
+    if (!packId) {
+      return fail(400, { success: false, error: "ID is required" });
+    }
+
+    const { error } = await adminClient.from("packs").delete().eq("id", packId);
+
+    if (error) {
+      console.error("Error deleting pack:", error);
+      return fail(500, { success: false, error: error.message });
+    }
+
+    return { success: true, message: "Pack deleted successfully" };
+  },
+  toggleActive: async ({ request, locals }) => {
+    const { session, user } = await locals.safeGetSession();
+    if (!session || !user) {
+      return fail(401, { success: false, error: "Unauthorized" });
+    }
+    try {
+      await requireAdmin(user.id);
+    } catch (err) {
+      return fail(403, { success: false, error: "Forbidden: Admin access required" });
+    }
+
+    const formData = await request.formData();
+    const packId = formData.get("id") as string | null;
+    const isActiveRaw = formData.get("is_active");
+    if (!packId || isActiveRaw === null || isActiveRaw === undefined) {
+      return fail(400, { success: false, error: "ID and is_active are required" });
+    }
+    const is_active = isActiveRaw === "true" || isActiveRaw === "1";
+
+    const { error } = await adminClient
+      .from("packs")
+      .update({ is_active: !is_active })
+      .eq("id", packId);
+
+    if (error) {
+      console.error("Error toggling pack active status:", error);
+      return fail(500, { success: false, error: error.message });
+    }
+    return { success: true };
   },
 } satisfies Actions;

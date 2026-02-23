@@ -16,6 +16,7 @@ export interface Shipment {
 }
 
 export interface AdminShipment extends Shipment {
+  inventory: any;
   userId: string;
   userEmail?: string;
   userName?: string;

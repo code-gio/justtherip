@@ -4,11 +4,25 @@ import { adminClient } from "$lib/server/rips";
 
 const CARDS_PER_PAGE = 50;
 
+/** PostgREST code when the table is not in the schema cache */
+const TABLE_NOT_FOUND_CODE = "PGRST205";
+
+function catalogUnavailableResponse(page: number) {
+  return json({
+    cards: [],
+    total: 0,
+    page,
+    perPage: CARDS_PER_PAGE,
+    hasMore: false,
+    catalogUnavailable: true,
+  });
+}
+
 /**
  * Card Search API Endpoint
- * 
+ *
  * GET /api/admin/cards/search
- * 
+ *
  * Query params:
  * - game_code: 'mtg', 'pokemon', etc.
  * - search: search query (card name)
@@ -36,12 +50,25 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     return json({ error: "game_code is required" }, { status: 400 });
   }
 
+  const tableName = `${gameCode}_cards`;
+
+  // Verify table exists with a minimal query; avoid error/log when it does not
+  const { error: tableCheckError } = await adminClient
+    .from(tableName)
+    .select("id")
+    .limit(1);
+
+  if (tableCheckError?.code === TABLE_NOT_FOUND_CODE) {
+    return catalogUnavailableResponse(page);
+  }
+  if (tableCheckError) {
+    console.error("Error fetching cards:", tableCheckError);
+    return json({ error: "Failed to fetch cards" }, { status: 500 });
+  }
+
   // Use provided value range directly (no tier filtering)
   const effectiveMinValue = minValueCents;
   const effectiveMaxValue = maxValueCents;
-
-  // Determine table name based on game
-  const tableName = `${gameCode}_cards`;
   const offset = (page - 1) * CARDS_PER_PAGE;
 
   try {
@@ -74,6 +101,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
           .range(rangeStart, rangeEnd);
 
         if (cardsError) {
+          if (cardsError.code === TABLE_NOT_FOUND_CODE) return catalogUnavailableResponse(page);
           console.error("Error fetching cards:", cardsError);
           return json({ error: "Failed to fetch cards" }, { status: 500 });
         }
@@ -127,6 +155,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         .limit(maxFetch);
 
       if (cardsError) {
+        if (cardsError.code === TABLE_NOT_FOUND_CODE) return catalogUnavailableResponse(page);
         console.error("Error fetching cards:", cardsError);
         return json({ error: "Failed to fetch cards" }, { status: 500 });
       }
@@ -190,6 +219,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         .range(offset, offset + CARDS_PER_PAGE - 1);
 
       if (cardsError) {
+        if (cardsError.code === TABLE_NOT_FOUND_CODE) return catalogUnavailableResponse(page);
         console.error("Error fetching cards:", cardsError);
         return json({ error: "Failed to fetch cards" }, { status: 500 });
       }

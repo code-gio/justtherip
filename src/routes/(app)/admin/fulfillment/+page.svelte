@@ -9,16 +9,20 @@
   import ShipmentFilters from "$lib/components/admin/fulfillment/shipment-filters.svelte";
   import ShipmentTable from "$lib/components/admin/fulfillment/shipment-table.svelte";
   import UpdateStatusDialog from "$lib/components/admin/fulfillment/update-status-dialog.svelte";
-  import type { AdminShipment, ShipmentStatus } from "$lib/components/shipments/types";
+  import type {
+    AdminShipment,
+    ShipmentStatus,
+  } from "$lib/components/shipments/types";
   import type { PageData } from "./$types";
+  import ViewPurchaseOptionsDialog from "$lib/components/admin/fulfillment/view-purchase-options-dialog.svelte";
 
   /**
    * Admin Fulfillment — `/admin/fulfillment`
-   * 
+   *
    * PURPOSE: Manage physical card shipments
-   * 
+   *
    * ACCESS: Restricted to admin users only
-   * 
+   *
    * FEATURES:
    * - View all shipment requests:
    *   - User info
@@ -34,7 +38,7 @@
    * - Add tracking numbers
    * - Add carrier information
    * - Admin notes
-   * 
+   *
    * WORKFLOW:
    * 1. New request appears as "pending"
    * 2. Admin marks "processing" when picking card
@@ -48,17 +52,19 @@
   let isLoading = $state(false);
   let selectedShipment = $state<AdminShipment | null>(null);
   let showUpdateDialog = $state(false);
+  let showViewPurchaseOptionsDialog = $state(false);
 
   // Initialize from server data
   $effect(() => {
     if (data?.shipments) {
-      shipments = data.shipments;
+      // shipments = data.shipments;
+      console.log("shipments", shipments);
     }
   });
 
   // Filter state from URL params
   const statusFilter = $derived(
-    ($page.url.searchParams.get("status") as ShipmentStatus | "all") || "all"
+    ($page.url.searchParams.get("status") as ShipmentStatus | "all") || "all",
   );
   const searchQuery = $derived($page.url.searchParams.get("search") || "");
 
@@ -66,7 +72,9 @@
   const stats = $derived(() => {
     const all = shipments.length;
     const pending = shipments.filter((s) => s.status === "pending").length;
-    const processing = shipments.filter((s) => s.status === "processing").length;
+    const processing = shipments.filter(
+      (s) => s.status === "processing",
+    ).length;
     const shipped = shipments.filter((s) => s.status === "shipped").length;
     const delivered = shipments.filter((s) => s.status === "delivered").length;
     const cancelled = shipments.filter((s) => s.status === "cancelled").length;
@@ -78,7 +86,7 @@
     try {
       isLoading = true;
       const params = new URLSearchParams($page.url.searchParams);
-      
+
       const response = await fetch(`/api/admin/shipments?${params.toString()}`);
 
       if (!response.ok) {
@@ -129,6 +137,11 @@
     showUpdateDialog = true;
   }
 
+  function handleViewPurchaseOptions(shipment: AdminShipment) {
+    selectedShipment = shipment;
+    showViewPurchaseOptionsDialog = true;
+  }
+
   function handleUpdateComplete() {
     showUpdateDialog = false;
     selectedShipment = null;
@@ -136,11 +149,11 @@
   }
 
   // Initialize from server data
-  $effect(() => {
-    if (data?.shipments) {
-      shipments = data.shipments;
-    }
-  });
+  // $effect(() => {
+  //   if (data?.shipments) {
+  //     shipments = data.shipments;
+  //   }
+  // });
 
   onMount(() => {
     // Always load shipments on mount to ensure we have fresh data
@@ -153,8 +166,8 @@
   <div>
     <h1 class="text-4xl font-bold">Fulfillment Management</h1>
     <p class="text-muted-foreground mt-2">
-      View shipment requests, update status, add tracking numbers,
-      and manage the physical card fulfillment pipeline.
+      View shipment requests, update status, add tracking numbers, and manage
+      the physical card fulfillment pipeline.
     </p>
   </div>
 
@@ -188,8 +201,8 @@
 
   <!-- Filters -->
   <ShipmentFilters
-    statusFilter={statusFilter}
-    searchQuery={searchQuery}
+    {statusFilter}
+    {searchQuery}
     onStatusChange={handleStatusChange}
     onSearchChange={handleSearchChange}
     onClear={handleClearFilters}
@@ -212,7 +225,7 @@
       {/if}
     </div>
   {:else}
-    <ShipmentTable shipments={shipments} onUpdate={handleUpdate} />
+    <ShipmentTable {shipments} onUpdate={handleUpdate} onViewPurchaseOptions={handleViewPurchaseOptions} />
   {/if}
 
   <!-- Pagination -->
@@ -264,3 +277,13 @@
   }}
 />
 
+<!-- View Purchase Options Dialog -->
+<!-- onUpdate={handleViewPurchaseOptionsComplete} -->
+<ViewPurchaseOptionsDialog
+  bind:open={showViewPurchaseOptionsDialog}
+  shipment={selectedShipment}
+  onClose={() => {
+    showViewPurchaseOptionsDialog = false;
+    selectedShipment = null;
+  }}
+/>

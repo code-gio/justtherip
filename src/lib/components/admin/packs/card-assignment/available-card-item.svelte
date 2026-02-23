@@ -64,6 +64,14 @@
   }
 
   const cardImageUrl = $derived(getCardImageUrl(card, "small"));
+
+  $effect(() => {
+    console.log("isAssigned", isAssigned);
+    console.log("card", card);
+    console.log("gameCode", gameCode);
+    console.log("priceCents", priceCents);
+    console.log("priceFormatted", priceFormatted);
+  });
 </script>
 
 <div class="flex flex-col gap-2 {isAssigned ? 'opacity-50' : ''}">

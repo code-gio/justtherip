@@ -2,6 +2,7 @@ import { redirect } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import { adminClient } from "$lib/server/rips";
 import { getUserRipBalance } from "$lib/server/rips";
+import { JUSTTHEAPI_URL } from "$env/static/private";
 
 /**
  * Extract card image URL from image_uri field
@@ -59,7 +60,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         rip_cost,
         game_code
       `)
-      .eq("is_active", true)
+      .eq("is_active", true).eq("is_archive", false)
       .order("created_at", { ascending: false }),
     getUserRipBalance(user.id),
   ]);
@@ -150,9 +151,10 @@ export const load: PageServerLoad = async ({ locals }) => {
       return packData;
     })
   );
+  // console.log("packsWithCards00000000000000000000000000", packsWithCards);
 
   return {
     packs: packsWithCards,
-    balance: balance || 0,
+    // balance: balance || 0,
   };
 };

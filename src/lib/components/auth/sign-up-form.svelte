@@ -312,7 +312,7 @@
     />
   </Form.Field>
 
-  <Form.Button class="w-full" disabled={isSubmitting}>
+  <Form.Button class="w-full text-white" disabled={isSubmitting}>
     {#if isSubmitting}
       Creating account...
     {:else}

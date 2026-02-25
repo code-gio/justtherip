@@ -13,14 +13,17 @@
     };
     market_value_cents?: number;
     rarity?: string;
-    image_uri?: {
-      small?: string;
-      normal?: string;
-      large?: string;
-      png?: string;
-      art_crop?: string;
-      border_crop?: string;
-    } | string | null;
+    image_uri?:
+      | {
+          small?: string;
+          normal?: string;
+          large?: string;
+          png?: string;
+          art_crop?: string;
+          border_crop?: string;
+        }
+      | string
+      | null;
   }
 
   let {
@@ -43,7 +46,7 @@
 
   function getCardImageUrl(
     card: CardData,
-    size: "small" | "normal" | "large" = "normal"
+    size: "small" | "normal" | "large" = "normal",
   ): string | null {
     if (!card.image_uri) return null;
 
@@ -64,14 +67,6 @@
   }
 
   const cardImageUrl = $derived(getCardImageUrl(card, "small"));
-
-  $effect(() => {
-    console.log("isAssigned", isAssigned);
-    console.log("card", card);
-    console.log("gameCode", gameCode);
-    console.log("priceCents", priceCents);
-    console.log("priceFormatted", priceFormatted);
-  });
 </script>
 
 <div class="flex flex-col gap-2 {isAssigned ? 'opacity-50' : ''}">
@@ -98,7 +93,9 @@
         />
       </button>
     {:else}
-      <div class="w-full h-full bg-muted rounded flex items-center justify-center">
+      <div
+        class="w-full h-full bg-muted rounded flex items-center justify-center"
+      >
         <span class="text-xs text-muted-foreground">No Image</span>
       </div>
     {/if}
@@ -130,4 +127,3 @@
     {/if}
   </div>
 </div>
-

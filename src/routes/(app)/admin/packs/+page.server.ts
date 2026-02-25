@@ -26,7 +26,9 @@ export const load: PageServerLoad = async ({ locals }) => {
         is_active,
         total_openings
       `)
-      .order("created_at", { ascending: false }),
+      .eq("is_archive", false)
+      .order("created_at", { ascending: false })
+    ,
     adminClient
       .from("games")
       .select("id, name, code")
@@ -125,11 +127,29 @@ export const actions = {
       return fail(400, { success: false, error: "ID is required" });
     }
 
-    const { error } = await adminClient.from("packs").delete().eq("id", packId);
+    const { error: deleteError } = await adminClient.from("packs").delete().eq("id", packId);
 
-    if (error) {
-      console.error("Error deleting pack:", error);
-      return fail(500, { success: false, error: error.message });
+    if (deleteError) {
+      const isFkViolation =
+        deleteError.code === "23503" ||
+        (typeof deleteError.message === "string" &&
+          deleteError.message.includes("pack_openings_pack_id_fkey"));
+
+      if (isFkViolation) {
+        const { error: updateError } = await adminClient
+          .from("packs")
+          .update({ is_archive: true })
+          .eq("id", packId);
+
+        if (updateError) {
+          console.error("Error archiving pack:", updateError);
+          return fail(500, { success: false, error: updateError.message });
+        }
+        return { success: true, archived: true, message: "Pack archived (has openings)" };
+      }
+
+      console.error("Error deleting pack:", deleteError);
+      return fail(500, { success: false, error: deleteError.message });
     }
 
     return { success: true, message: "Pack deleted successfully" };

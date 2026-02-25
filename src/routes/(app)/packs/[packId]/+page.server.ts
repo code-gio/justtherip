@@ -2,6 +2,8 @@ import { redirect, error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import { adminClient, getSystemConfig, getUserRipBalance } from "$lib/server/rips";
 import { calculatePackCardProbabilities } from "$lib/server/card-draw";
+// import { JUSTTHEAPI_URL } from "$env/static/private";
+
 
 /**
  * Extract card image URL from image_uri field
@@ -57,6 +59,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       .select("*")
       .eq("id", packId)
       .eq("is_active", true)
+      .eq("is_archive", false)
       .single(),
     getUserRipBalance(user.id),
     getSystemConfig("sellback_rate"),

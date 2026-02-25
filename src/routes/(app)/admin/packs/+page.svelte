@@ -3,7 +3,8 @@
   import { deserialize } from "$app/forms";
   import { Button } from "$lib/components/ui/button";
   import * as Card from "$lib/components/ui/card/index.js";
-  import { IconPlus, IconTrash } from "@tabler/icons-svelte";
+  import { IconPlus, IconTrash, IconSearch } from "@tabler/icons-svelte";
+  import { Input } from "$lib/components/ui/input";
   import PackCreateDialog from "$lib/components/admin/packs/pack-create-dialog.svelte";
   import PackListHeader from "$lib/components/admin/packs/pack-list-header.svelte";
   import PackCardItem from "$lib/components/admin/packs/pack-card-item.svelte";
@@ -57,6 +58,19 @@
   let packToDelete = $state<Pack | null>(null);
   let isDeleting = $state(false);
   let togglingPackId = $state<string | null>(null);
+  let searchQuery = $state("");
+
+  const filteredPacks = $derived(
+    data.packs.filter((pack) => {
+      const q = searchQuery.trim().toLowerCase();
+      if (!q) return true;
+      const name = pack.name.toLowerCase();
+      const slug = pack.slug.toLowerCase();
+      const gameName = pack.game?.name?.toLowerCase() ?? "";
+      const gameCode = pack.game_code?.toLowerCase() ?? "";
+      return name.includes(q) || slug.includes(q) || gameName.includes(q) || gameCode.includes(q);
+    })
+  );
 
   function handleCreatePack() {
     showCreateDialog = true;
@@ -144,7 +158,9 @@
       });
       const result = deserialize(await response.text());
       if (result.type === "success") {
-        toast.success("Pack deleted successfully");
+        toast.success(
+          result.data?.archived ? "Pack archived (has openings)" : "Pack deleted successfully"
+        );
         deleteDialogOpen = false;
         packToDelete = null;
         await invalidateAll();
@@ -165,6 +181,16 @@
 <div class="container mx-auto px-4 py-8 space-y-6">
   <PackListHeader onCreatePack={handleCreatePack} />
 
+  <div class="relative max-w-sm">
+    <IconSearch class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+    <Input
+      type="text"
+      placeholder="Search packs..."
+      bind:value={searchQuery}
+      class="pl-10"
+    />
+  </div>
+
   {#if data.packs.length === 0}
     <Card.Root>
       <Card.Content class="py-12 text-center">
@@ -175,9 +201,15 @@
         </Button>
       </Card.Content>
     </Card.Root>
+  {:else if filteredPacks.length === 0}
+    <Card.Root>
+      <Card.Content class="py-12 text-center">
+        <p class="text-muted-foreground">No packs found matching your search.</p>
+      </Card.Content>
+    </Card.Root>
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {#each data.packs as pack (pack.id)}
+      {#each filteredPacks as pack (pack.id)}
         <PackCardItem
           {pack}
           togglingPackId={togglingPackId}
